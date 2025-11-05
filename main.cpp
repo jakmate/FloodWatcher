@@ -1,46 +1,16 @@
 #include <iostream>
 #include <string>
 #include <nlohmann/json.hpp>
-
-#include "FloodWarning.hpp"
-#include "Station.hpp"
-#include "GeometryTypes.hpp"
+#include <fstream>
+#include <filesystem>
+#include "FloodMonitoringData.hpp"
 #include "HttpClient.hpp"
 
 using json = nlohmann::json;
 
-class FloodMonitoringData {
-public:
-    std::vector<FloodWarning> floodWarnings;
-    std::vector<Station> stations;
-
-    // Parse entire API response
-    void parseFloodWarnings(const json& apiResponse) {
-        if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
-            for (const auto& item : apiResponse["items"]) {
-                floodWarnings.push_back(FloodWarning::fromJson(item));
-            }
-        }
-    }
-
-    void parseStations(const json& apiResponse) {
-        if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
-            for (const auto& item : apiResponse["items"]) {
-                try {
-                    stations.push_back(Station::fromJson(item));
-                } catch (const std::exception& e) {
-                    std::cerr << "Error parsing station: " << e.what() << std::endl;
-                    continue;
-                }
-            }
-        } else {
-            std::cerr << "No items array found in API response" << std::endl;
-        }
-    }
-};
-
-
 int main() {
+    FloodMonitoringData monitoringData;
+
     auto response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
     
     if (!response) {
@@ -49,8 +19,6 @@ int main() {
     }
     
     std::string readBuffer = *response;
-
-    FloodMonitoringData monitoringData;
 
     try {
         json data = json::parse(readBuffer);
@@ -61,7 +29,7 @@ int main() {
         return 1;
     }
 
-    response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/stations");
+    response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/stations?status=Active");
     
     if (!response) {
         std::cerr << "Failed to fetch stations data" << std::endl;
@@ -74,12 +42,19 @@ int main() {
         json data = json::parse(readBuffer);
         monitoringData.parseStations(data);
 
-        std::cout << "Found " << monitoringData.stations.size() << " stations\n";
+        std::cout << "Found " << monitoringData.getStations().size() << " stations\n";
 
-        for (const auto& station : monitoringData.stations) {
-            std::cout << "\n" << station.RLOIid << " in " << station.town << "\n";
-            std::cout << station.lat << ", " << station.lon << "\n";
-            std::cout << station.northing << ", " << station.easting << "\n";
+        for (const auto& station : monitoringData.getStations()) {
+            std::cout << "\n" << station.getRLOIid() << " in " << station.getTown() << "\n";
+            std::cout << station.getLat() << ", " << station.getLon() << "\n";
+            std::cout << station.getNorthing() << ", " << station.getEasting() << "\n";
+            for (const auto& measure : station.getMeasures()) {
+                std::cout << "Parameter: " << measure.getParameterName() 
+                        << " (" << measure.getQualifier() << ")\n"
+                        << "Unit: " << measure.getUnitName() << "\n"
+                        << "Period: " << measure.getPeriod() << "s\n"
+                        << "ID: " << measure.getId() << "\n\n";
+            }
             std::cout << "-----------------" << "\n";
         }
     } catch (const json::parse_error& e) {

@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include "GeometryTypes.hpp"
 
 // Helper function to print a single coordinate

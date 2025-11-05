@@ -11,9 +11,11 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 # Source files
 add_executable(flood_monitor
     main.cpp
-    HttpClient.cpp
+    FloodMonitoringData.cpp
     FloodWarning.cpp
     Station.cpp
+    Measure.cpp
+    HttpClient.cpp
     GeometryTypes.cpp
 )
 
