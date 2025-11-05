@@ -8,7 +8,7 @@ void printCoordinate(const Coordinate& coord) {
 }
 
 // Helper function to print a linear ring
-void printLinearRing(const LinearRing& ring, const std::string& indent = "    ") {
+void printLinearRing(const LinearRing& ring, const std::string& indent) {
     std::cout << indent << "Ring with " << ring.size() << " points:\n";
     for (size_t i = 0; i < ring.size(); ++i) {
         std::cout << indent << "  Point " << i << ": ";
@@ -18,7 +18,7 @@ void printLinearRing(const LinearRing& ring, const std::string& indent = "    ")
 }
 
 // Helper function to print a polygon
-void printPolygon(const MyPolygon& polygon, const std::string& indent = "  ") {
+void printPolygon(const MyPolygon& polygon, const std::string& indent) {
     std::cout << indent << "Polygon with " << polygon.size() << " rings:\n";
     for (size_t i = 0; i < polygon.size(); ++i) {
         std::cout << indent << "Ring " << i << " ("
@@ -28,7 +28,7 @@ void printPolygon(const MyPolygon& polygon, const std::string& indent = "  ") {
 }
 
 // Helper function to print a MultiPolygon
-void printMultiPolygon(const MultiPolygon& multiPolygon, const std::string& indent = "") {
+void printMultiPolygon(const MultiPolygon& multiPolygon, const std::string& indent) {
     std::cout << indent << "MultiPolygon with " << multiPolygon.size() << " polygons:\n";
     for (size_t i = 0; i < multiPolygon.size(); ++i) {
         std::cout << indent << "Polygon " << i << ":\n";

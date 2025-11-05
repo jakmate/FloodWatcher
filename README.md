@@ -9,9 +9,11 @@ Plan it to make a dashboard using Qt and real time fetching from the API.
 - nlohmann/json 3.2.0+
 
 ## Building
-- bashmkdir build && cd build
-- cmake ..
-- cmake --build .
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build .
+```
 
 ## API Reference
 Data source: UK Environment Agency Flood Monitoring API [[click here](https://environment.data.gov.uk/flood-monitoring/doc/reference)]

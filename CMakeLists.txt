@@ -13,6 +13,7 @@ add_executable(flood_monitor
     main.cpp
     HttpClient.cpp
     FloodWarning.cpp
+    Station.cpp
     GeometryTypes.cpp
 )
 

@@ -3,6 +3,7 @@
 #include <nlohmann/json.hpp>
 
 #include "FloodWarning.hpp"
+#include "Station.hpp"
 #include "GeometryTypes.hpp"
 #include "HttpClient.hpp"
 
@@ -11,6 +12,7 @@ using json = nlohmann::json;
 class FloodMonitoringData {
 public:
     std::vector<FloodWarning> floodWarnings;
+    std::vector<Station> stations;
 
     // Parse entire API response
     void parseFloodWarnings(const json& apiResponse) {
@@ -20,6 +22,21 @@ public:
             }
         }
     }
+
+    void parseStations(const json& apiResponse) {
+        if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
+            for (const auto& item : apiResponse["items"]) {
+                try {
+                    stations.push_back(Station::fromJson(item));
+                } catch (const std::exception& e) {
+                    std::cerr << "Error parsing station: " << e.what() << std::endl;
+                    continue;
+                }
+            }
+        } else {
+            std::cerr << "No items array found in API response" << std::endl;
+        }
+    }
 };
 
 
@@ -27,7 +44,7 @@ int main() {
     auto response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
     
     if (!response) {
-        std::cerr << "Failed to fetch flood data" << std::endl;
+        std::cerr << "Failed to fetch flood warning data" << std::endl;
         return 1;
     }
     
@@ -38,18 +55,33 @@ int main() {
     try {
         json data = json::parse(readBuffer);
         monitoringData.parseFloodWarnings(data);
+    } catch (const json::parse_error& e) {
+        std::cerr << "JSON Parse Error: " << e.what() << "\n";
+        std::cerr << "Raw response:\n" << readBuffer << std::endl;
+        return 1;
+    }
 
-        for (const auto& warning : monitoringData.floodWarnings) {
-            std::cout << "\n" << warning.severity << " in " << warning.areaName << "\n";
-            std::cout << warning.description << "\n";
-            if (warning.floodAreaPolygon) {
-                std::cout << "FLOOD AREA POLYGON DATA:\n";
-                printMultiPolygon(*warning.floodAreaPolygon, "  ");
-            } else {
-                std::cout << "No polygon data available for this warning\n";
-            }
+    response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/stations");
+    
+    if (!response) {
+        std::cerr << "Failed to fetch stations data" << std::endl;
+        return 1;
+    }
+    
+    readBuffer = *response;
+
+    try {
+        json data = json::parse(readBuffer);
+        monitoringData.parseStations(data);
+
+        std::cout << "Found " << monitoringData.stations.size() << " stations\n";
+
+        for (const auto& station : monitoringData.stations) {
+            std::cout << "\n" << station.RLOIid << " in " << station.town << "\n";
+            std::cout << station.lat << ", " << station.lon << "\n";
+            std::cout << station.northing << ", " << station.easting << "\n";
             std::cout << "-----------------" << "\n";
-        } 
+        }
     } catch (const json::parse_error& e) {
         std::cerr << "JSON Parse Error: " << e.what() << "\n";
         std::cerr << "Raw response:\n" << readBuffer << std::endl;
