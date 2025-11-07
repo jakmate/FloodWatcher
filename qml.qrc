@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>qml/main.qml</file>
+        <file>qml/MapArea.qml</file>
+        <file>qml/RightPanel.qml</file>
+    </qresource>
+</RCC>

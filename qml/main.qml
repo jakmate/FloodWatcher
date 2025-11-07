@@ -31,7 +31,7 @@ Window {
             // keep the map in sync with the app-level selection
             selectedStation: root.selectedStation
 
-            onStationSelected: {
+            onStationSelected: (station) => {
                 root.selectedStation = station
             }
         }

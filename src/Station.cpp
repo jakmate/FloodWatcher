@@ -4,7 +4,8 @@
 #include "Station.hpp"
 #include "HttpClient.hpp"
 
-Station Station::fromJson(const json& jsonObj) {
+Station Station::fromJson(const json &jsonObj)
+{
     Station station;
     station.RLOIid = jsonObj.value("RLOIid", "unknown");
     station.catchmentName = jsonObj.value("catchmentName", "unknown");
@@ -18,11 +19,13 @@ Station Station::fromJson(const json& jsonObj) {
     station.town = jsonObj.value("town", "unknown");
     station.riverName = jsonObj.value("riverName", "unknown");
 
-    if (jsonObj.contains("measures") && jsonObj["measures"].is_array()) {
-        for (const auto& measureJson : jsonObj["measures"]) {
+    if (jsonObj.contains("measures") && jsonObj["measures"].is_array())
+    {
+        for (const auto &measureJson : jsonObj["measures"])
+        {
             station.measures.push_back(Measure::fromJson(measureJson));
         }
     }
-    
+
     return station;
 }

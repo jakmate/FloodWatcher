@@ -1,7 +1,8 @@
 #include <iostream>
 #include "Measure.hpp"
 
-Measure Measure::fromJson(const json& jsonObj) {
+Measure Measure::fromJson(const json &jsonObj)
+{
     Measure measure;
     measure.id = jsonObj.value("@id", "");
     measure.parameter = jsonObj.value("parameter", "");

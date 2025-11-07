@@ -8,13 +8,14 @@ Plan it to make a dashboard using Qt and real time fetching from the API.
 - C++17 or later
 - CMake 3.15+
 - libcurl
-- nlohmann/json 3.2.0+
+- nlohmann/json
+- Qt
 
 ## Building
 
 ```bash
 mkdir build && cd build
-cmake ..
+cmake -G Ninja ..
 cmake --build .
 ```
 

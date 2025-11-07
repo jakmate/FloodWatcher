@@ -3,8 +3,6 @@ project(FloodMonitor VERSION 0.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)   
@@ -12,48 +10,50 @@ set(CMAKE_AUTOUIC ON)
 # Find required packages
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Location)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Location)
 
 # Source files
-qt_add_executable(flood_monitor
-    main.cpp
-    FloodMonitoringData.cpp
-    FloodWarning.cpp
-    Station.cpp
-    StationModel.cpp
-    Measure.cpp
-    HttpClient.cpp
-    GeometryTypes.cpp
+set(SOURCES
+    src/main.cpp
+    src/FloodMonitoringData.cpp
+    src/FloodWarning.cpp
+    src/Station.cpp
+    src/StationModel.cpp
+    src/Measure.cpp
+    src/HttpClient.cpp
+    src/GeometryTypes.cpp
 )
 
-qt_add_qml_module(flood_monitor
-    URI FloodMonitor
-    VERSION 0.1
-    QML_FILES
-        main.qml
-        MapArea.qml
-        RightPanel.qml
+# Header files
+set(HEADERS
+    include/FloodMonitoringData.hpp
+    include/FloodWarning.hpp
+    include/Station.hpp
+    include/StationModel.hpp
+    include/Measure.hpp
+    include/HttpClient.hpp
+    include/GeometryTypes.hpp
 )
+
+# Create executable
+add_executable(flood_monitor
+    ${SOURCES}
+    ${HEADERS}
+    qml.qrc
+)
+
+# Include directories
+target_include_directories(flood_monitor PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
 # Link libraries
 target_link_libraries(flood_monitor
     PRIVATE
         CURL::libcurl
         nlohmann_json::nlohmann_json
-        Qt::Location
-)
-
-set(qml_resource_files
-    "main.qml"
-    "MapArea.qml"
-    "RightPanel.qml"
-)
-
-qt6_add_resources(flood_monitor "qml"
-    PREFIX
-        "/"
-    FILES
-        ${qml_resource_files}
+        Qt6::Core
+        Qt6::Gui
+        Qt6::Qml
+        Qt6::Location
 )
 
 # Compiler warnings
