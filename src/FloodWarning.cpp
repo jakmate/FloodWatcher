@@ -8,7 +8,7 @@ FloodWarning FloodWarning::fromJson(const json &jsonObj)
     FloodWarning warning;
     warning.id = jsonObj.value("floodAreaID", "unknown");
     warning.description = jsonObj.value("description", "unknown");
-    warning.areaName = jsonObj.value("areaName", "unknown");
+    warning.areaName = jsonObj.value("eaAreaName", "unknown");
     warning.severity = jsonObj.value("severity", "unknown");
     warning.severityLevel = jsonObj.value("severityLevel", 0);
     warning.timeMessageChanged = jsonObj.value("timeMessageChanged", "");

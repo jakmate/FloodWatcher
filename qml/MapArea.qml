@@ -22,6 +22,7 @@ Item {
         activeMapType: map.supportedMapTypes[map.supportedMapTypes.length - 1]
         property geoCoordinate startCentroid
 
+        // Station markers
         MapItemView {
             model: stationModel
             delegate: MapQuickItem {
@@ -37,7 +38,6 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            // emit the full data map from C++ model to dashboard
                             var station = stationModel.getStation(index);
                             root.stationSelected({index: index, data: station});
                         }
@@ -46,7 +46,7 @@ Item {
             }
         }
 
-        // map handlers
+        // Map handlers
         PinchHandler {
             id: pinch; target: null
             onActiveChanged: if (active) map.startCentroid = map.toCoordinate(pinch.centroid.position, false)

@@ -1,4 +1,5 @@
 import QtQuick 2.15
+import QtQuick.Controls 2.15
 
 Rectangle {
     id: root
@@ -21,13 +22,27 @@ Rectangle {
                 font.pixelSize: 18
                 font.bold: true
                 elide: Text.ElideRight
+                width: parent.width - closeBtn.width - 8
             }
 
             Rectangle {
-                id: closeBtn; width: 28; height: 28; radius: 4; color: "#555555"
+                id: closeBtn
+                width: 28
+                height: 28
+                radius: 4
+                color: "#555555"
                 anchors.verticalCenter: parent.verticalCenter
-                Text { anchors.centerIn: parent; text: "✕"; color: "white"; font.pixelSize: 14 }
-                MouseArea { anchors.fill: parent; onClicked: root.selectedStation = null }
+                visible: selectedStation !== null
+                Text {
+                    anchors.centerIn: parent
+                    text: "✕"
+                    color: "white"
+                    font.pixelSize: 14
+                }
+                MouseArea {
+                    anchors.fill: parent
+                    onClicked: root.selectedStation = null
+                }
             }
         }
 
@@ -36,12 +51,14 @@ Rectangle {
             color: "#cccccc"
             font.pixelSize: 14
             wrapMode: Text.WordWrap
+            width: parent.width
         }
 
         // Details group - only visible when something is selected
         Column {
             spacing: 6
             visible: selectedStation !== null
+            width: parent.width
 
             Row { spacing: 8
                 Text { text: "RLOI ID:"; color: "#aaaaaa"; font.pixelSize: 13 }
@@ -62,7 +79,6 @@ Rectangle {
             Row { spacing: 8
                 Text { text: "Lat:"; color: "#aaaaaa"; font.pixelSize: 13 }
                 Text { text: selectedStation ? selectedStation.data.latitude : ""; color: "white"; font.pixelSize: 13 }
-                
             }
             Row { spacing: 8
                 Text { text: "Lon:"; color: "#aaaaaa"; font.pixelSize: 13 }
@@ -70,7 +86,96 @@ Rectangle {
             }
         }
 
-        Rectangle { width: parent.width - 32; height: 1; color: "#444444" }
-        Text { text: "Panel size: " + root.width + " × " + root.height; color: "#888888"; font.pixelSize: 11 }
+        Rectangle { width: parent.width; height: 1; color: "#444444" }
+
+        // Flood Warnings Section
+        Text {
+            text: "Flood Warnings"
+            color: "white"
+            font.pixelSize: 16
+            font.bold: true
+        }
+
+        ScrollView {
+            width: parent.width
+            height: parent.parent.height - y - 30
+            clip: true
+            contentWidth: width
+
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+            ScrollBar.vertical.policy: ScrollBar.AsNeeded
+
+            Column {
+                width: parent.parent.width
+                spacing: 12
+
+                Repeater {
+                    model: floodWarningModel
+
+                    Rectangle {
+                        width: parent.width - 16
+                        height: warningColumn.height + 16
+                        color: "#3a3a3a"
+                        radius: 6
+                        border.color: {
+                            if (model.severityLevel === 1) return "#ff4444"
+                            if (model.severityLevel === 2) return "#ff9944"
+                            if (model.severityLevel === 3) return "#ffdd44"
+                            return "#888888"
+                        }
+                        border.width: 2
+
+                        Column {
+                            id: warningColumn
+                            anchors.margins: 8
+                            anchors.left: parent.left
+                            anchors.right: parent.right
+                            anchors.top: parent.top
+                            spacing: 6
+
+                            Text {
+                                text: model.description || "Flood Warning"
+                                color: "white"
+                                font.pixelSize: 14
+                                font.bold: true
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                            }
+
+                            Text {
+                                text: "Severity: " + (model.severity || "Unknown")
+                                color: "#cccccc"
+                                font.pixelSize: 12
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                            }
+
+                            Text {
+                                text: "Area: " + (model.eaAreaName || "Unknown")
+                                color: "#cccccc"
+                                font.pixelSize: 12
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                            }
+
+                            Text {
+                                text: model.message || ""
+                                color: "#aaaaaa"
+                                font.pixelSize: 11
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                                visible: model.message !== ""
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Text {
+            text: "Panel size: " + root.width + " × " + root.height
+            color: "#888888"
+            font.pixelSize: 11
+        }
     }
 }

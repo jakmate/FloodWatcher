@@ -17,6 +17,7 @@ set(SOURCES
     src/main.cpp
     src/FloodMonitoringData.cpp
     src/FloodWarning.cpp
+    src/FloodWarningModel.cpp
     src/Station.cpp
     src/StationModel.cpp
     src/Measure.cpp
@@ -28,6 +29,7 @@ set(SOURCES
 set(HEADERS
     include/FloodMonitoringData.hpp
     include/FloodWarning.hpp
+    include/FloodWarningModel.hpp
     include/Station.hpp
     include/StationModel.hpp
     include/Measure.hpp
