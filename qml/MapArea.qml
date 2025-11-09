@@ -5,7 +5,14 @@ import QtPositioning 5.15
 Item {
     id: root
     property var selectedStation: null
-    signal stationSelected(var station)       // emitted when a marker is clicked
+    signal stationSelected(var station)
+    
+    function panToCoordinate(lat, lon, zoom) {
+        map.center = QtPositioning.coordinate(lat, lon)
+        if (zoom !== undefined) {
+            map.zoomLevel = zoom
+        }
+    }
 
     Plugin {
         id: mapPlugin
@@ -22,18 +29,46 @@ Item {
         activeMapType: map.supportedMapTypes[map.supportedMapTypes.length - 1]
         property geoCoordinate startCentroid
 
+        // Flood warning polygons
+        MapItemView {
+            model: floodWarningModel
+            delegate: MapPolygon {
+                path: model.polygonPath
+                property int sev: Number(model.severityLevel)
+
+                color: sev === 1 ? Qt.rgba(1, 0, 0, 0.5)
+                    : sev === 2 ? Qt.rgba(1, 165/255, 0, 0.5)
+                    : sev === 3 ? Qt.rgba(1, 1, 0, 0.5)
+                    : Qt.rgba(0, 0, 1, 0.5)
+
+                border.color: sev === 1 ? "#C80000"
+                            : sev === 2 ? "#C86400"
+                            : sev === 3 ? "#C8C800"
+                            : "#0000C8"
+
+                border.width: 3
+                opacity: 1
+            }
+        }
+
         // Station markers
         MapItemView {
             model: stationModel
             delegate: MapQuickItem {
                 coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
                 anchorPoint: Qt.point(sourceItem.width / 2, sourceItem.height / 2)
+                z: 10
 
                 sourceItem: Rectangle {
                     id: markerRect
                     width: 10; height: 10; radius: 5
                     border.color: "white"; border.width: 1
-                    color: (root.selectedStation && root.selectedStation.index === index) ? "red" : "blue"
+                    color: {
+                        if (root.selectedStation && root.selectedStation.index === index) {
+                            return "red"
+                        }
+                        return "blue"
+                    }
 
                     MouseArea {
                         anchors.fill: parent

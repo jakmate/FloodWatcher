@@ -1,13 +1,16 @@
 #include "FloodWarningModel.hpp"
 #include <algorithm>
+#include <QGeoCoordinate>
 
-FloodWarningModel::FloodWarningModel(const std::vector<FloodWarning>& warnings, QObject* parent)
-    : QAbstractListModel(parent), m_warnings(warnings) {
+FloodWarningModel::FloodWarningModel(const std::vector<FloodWarning> &warnings, QObject *parent)
+    : QAbstractListModel(parent), m_warnings(warnings)
+{
     // Sort by severity level (1 = most severe)
-    std::sort(m_warnings.begin(), m_warnings.end(), 
-        [](const FloodWarning& a, const FloodWarning& b) {
-            return a.getSeverityLevel() < b.getSeverityLevel();
-        });
+    std::sort(m_warnings.begin(), m_warnings.end(),
+              [](const FloodWarning &a, const FloodWarning &b)
+              {
+                  return a.getSeverityLevel() < b.getSeverityLevel();
+              });
 }
 
 FloodWarningModel::~FloodWarningModel() = default;
@@ -37,6 +40,8 @@ QVariant FloodWarningModel::data(const QModelIndex &index, int role) const
         return warning.getSeverityLevel();
     case EaAreaNameRole:
         return QString::fromStdString(warning.getAreaName());
+    case PolygonPathRole:
+        return getPolygonPath(warning);
     default:
         return QVariant();
     }
@@ -48,5 +53,48 @@ QHash<int, QByteArray> FloodWarningModel::roleNames() const
         {DescriptionRole, "description"},
         {SeverityRole, "severity"},
         {SeverityLevelRole, "severityLevel"},
-        {EaAreaNameRole, "eaAreaName"}};
+        {EaAreaNameRole, "eaAreaName"},
+        {PolygonPathRole, "polygonPath"}};
+}
+
+QVariantList FloodWarningModel::getPolygonPath(const FloodWarning &warning) const
+{
+    QVariantList paths;
+
+    const auto &multiPolygon = warning.getFloodAreaPolygon();
+    if (!multiPolygon.has_value() || multiPolygon->empty())
+    {
+        return paths;
+    }
+
+    // For each polygon in the multipolygon
+    for (const auto &polygon : *multiPolygon)
+    {
+        if (polygon.empty())
+            continue;
+
+        // Get the exterior ring
+        const auto &exteriorRing = polygon[0];
+
+        QVariantList coordinates;
+        for (const auto &coord : exteriorRing)
+        {
+            // coord.first = longitude, coord.second = latitude
+            QGeoCoordinate geoCoord(coord.second, coord.first);
+            coordinates.append(QVariant::fromValue(geoCoord));
+        }
+
+        if (!coordinates.isEmpty())
+        {
+            paths.append(QVariant::fromValue(coordinates));
+        }
+    }
+
+    // QML MapPolygon can only handle one path at a time
+    if (!paths.isEmpty())
+    {
+        return paths[0].toList();
+    }
+
+    return QVariantList();
 }

@@ -4,6 +4,9 @@ import QtQuick.Controls 2.15
 Rectangle {
     id: root
     property var selectedStation: null
+    signal floodWarningClicked(var polygonPath)
+    signal stationClosed()
+    
     color: "#2b2b2b"
     border.color: "white"
     border.width: 1
@@ -41,7 +44,9 @@ Rectangle {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: root.selectedStation = null
+                    onClicked: {
+                        root.stationClosed()
+                    }
                 }
             }
         }
@@ -124,6 +129,16 @@ Rectangle {
                             return "#888888"
                         }
                         border.width: 2
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            onClicked: {
+                                if (model.polygonPath && model.polygonPath.length > 0) {
+                                    root.floodWarningClicked(model.polygonPath)
+                                }
+                            }
+                        }
 
                         Column {
                             id: warningColumn

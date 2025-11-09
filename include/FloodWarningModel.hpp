@@ -1,5 +1,6 @@
 #pragma once
 #include <QAbstractListModel>
+#include <QVariantList>
 #include <vector>
 #include "FloodWarning.hpp"
 
@@ -12,7 +13,8 @@ public:
         DescriptionRole = Qt::UserRole + 1,
         SeverityRole,
         SeverityLevelRole,
-        EaAreaNameRole
+        EaAreaNameRole,
+        PolygonPathRole
     };
 
     explicit FloodWarningModel(const std::vector<FloodWarning> &warnings, QObject *parent = nullptr);
@@ -24,4 +26,5 @@ public:
 
 private:
     std::vector<FloodWarning> m_warnings;
+    QVariantList getPolygonPath(const FloodWarning &warning) const;
 };

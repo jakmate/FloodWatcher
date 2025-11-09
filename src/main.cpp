@@ -51,13 +51,17 @@ int main(int argc, char *argv[])
 
     readBuffer = *response;
 
-    try {
+    try
+    {
         json data = json::parse(readBuffer);
         monitoringData.parseFloodWarnings(data);
         std::cout << "Found " << monitoringData.getFloodWarnings().size() << " warnings\n";
-    } catch (const json::parse_error& e) {
+    }
+    catch (const json::parse_error &e)
+    {
         std::cerr << "JSON Parse Error: " << e.what() << "\n";
-        std::cerr << "Raw response:\n" << readBuffer << std::endl;
+        std::cerr << "Raw response:\n"
+                  << readBuffer << std::endl;
         return 1;
     }
 
