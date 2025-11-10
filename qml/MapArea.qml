@@ -6,6 +6,12 @@ Item {
     id: root
     property var selectedStation: null
     signal stationSelected(var station)
+    readonly property real minLat: 53.5
+    readonly property real maxLat: 58.0
+    readonly property real minLon: -6.0
+    readonly property real maxLon: -1.6
+    readonly property real minZoom: 6.125
+    readonly property real maxZoom: 15.0
     
     function panToCoordinate(lat, lon, zoom) {
         map.center = QtPositioning.coordinate(lat, lon)
@@ -57,17 +63,16 @@ Item {
             delegate: MapQuickItem {
                 coordinate: QtPositioning.coordinate(model.latitude, model.longitude)
                 anchorPoint: Qt.point(sourceItem.width / 2, sourceItem.height / 2)
-                z: 10
 
                 sourceItem: Rectangle {
                     id: markerRect
-                    width: 10; height: 10; radius: 5
+                    width: 8; height: 8; radius: 5
                     border.color: "white"; border.width: 1
                     color: {
                         if (root.selectedStation && root.selectedStation.index === index) {
                             return "red"
                         }
-                        return "blue"
+                        return "gray"
                     }
 
                     MouseArea {
@@ -95,8 +100,37 @@ Item {
                              : PointerDevice.Mouse
             rotationScale: 1/120
             property: "zoomLevel"
+            onWheel: (event) => {
+                var newZoom = map.zoomLevel + event.angleDelta.y * rotationScale
+                map.zoomLevel = Math.max(root.minZoom, Math.min(root.maxZoom, newZoom))
+                event.accepted = true
+            }
         }
-        DragHandler { id: drag; target: null; onTranslationChanged: (delta) => map.pan(-delta.x, -delta.y) }
+        DragHandler {
+            id: drag
+            target: null
+            onTranslationChanged: (delta) => {
+                var newCenter = map.toCoordinate(
+                    Qt.point(map.width/2 - delta.x, map.height/2 - delta.y)
+                )
+                
+                // Calculate dynamic bounds based on zoom level
+                var zoomFactor = (map.zoomLevel - root.minZoom) / (root.maxZoom - root.minZoom)
+                var latPadding = (maxLat - minLat) * zoomFactor * 3
+                var lonPadding = (maxLon - minLon) * zoomFactor * 3
+                
+                var dynamicMinLat = minLat - latPadding
+                var dynamicMaxLat = maxLat + latPadding
+                var dynamicMinLon = minLon - lonPadding
+                var dynamicMaxLon = maxLon + lonPadding
+                
+                // Clamp to dynamic bounds
+                var clampedLat = Math.max(dynamicMinLat, Math.min(dynamicMaxLat, newCenter.latitude))
+                var clampedLon = Math.max(dynamicMinLon, Math.min(dynamicMaxLon, newCenter.longitude))
+                
+                map.center = QtPositioning.coordinate(clampedLat, clampedLon)
+            }
+        }
 
         Shortcut { enabled: map.zoomLevel < map.maximumZoomLevel; sequence: StandardKey.ZoomIn; onActivated: map.zoomLevel = Math.round(map.zoomLevel + 1) }
         Shortcut { enabled: map.zoomLevel > map.minimumZoomLevel; sequence: StandardKey.ZoomOut; onActivated: map.zoomLevel = Math.round(map.zoomLevel - 1) }
