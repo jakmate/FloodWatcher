@@ -1,0 +1,61 @@
+name: Lint & Format
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint_cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format clang-tidy cmake build-essential \
+            nlohmann-json3-dev qt6-base-dev qt6-declarative-dev \
+            qt6-positioning-dev
+
+      - name: Generate compile_commands.json
+        run: |
+          cmake -B build
+
+      - name: Run clang-format check
+        run: |
+          find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+            -exec clang-format --dry-run --Werror --style=file {} +
+
+      - name: Run clang-tidy
+        run: |
+          find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+            -print0 | xargs -0 -P $(nproc) -I {} clang-tidy -p build {}
+
+      - name: Finish
+        run: |
+          echo "Linting cpp done"
+    
+  lint_qml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qtdeclarative5-dev-tools
+
+      - name: Run qmllint
+        run: |
+          find qml -type f -name '*.qml' -exec qmllint {} +
+
+      - name: Finish
+        run: |
+          echo "Linting qml done"

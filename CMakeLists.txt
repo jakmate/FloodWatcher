@@ -5,12 +5,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)   
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Find required packages
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Location)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Positioning)
 
 # Source files
 set(SOURCES
@@ -55,7 +56,7 @@ target_link_libraries(flood_monitor
         Qt6::Core
         Qt6::Gui
         Qt6::Qml
-        Qt6::Location
+        Qt6::Positioning
 )
 
 # Compiler warnings

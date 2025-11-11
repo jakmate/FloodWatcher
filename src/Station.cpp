@@ -1,62 +1,60 @@
-#include <iostream>
-#include <curl/curl.h>
-
 #include "Station.hpp"
 #include "HttpClient.hpp"
+#include <curl/curl.h>
+#include <iostream>
 
-Station Station::fromJson(const json &jsonObj)
-{
-    Station station;
-    
-    // Extract value based on status
-    auto getActiveValue = [&jsonObj](const std::string& key, const auto& defaultValue) {
-        using ValueType = std::remove_cv_t<std::remove_reference_t<decltype(defaultValue)>>;
-        
-        if (!jsonObj.contains(key)) return ValueType(defaultValue);
-        
-        const auto& field = jsonObj[key];
-        
-        // If it's not an array, return as-is
-        if (!field.is_array()) {
-            return field.get<ValueType>();
-        }
-        
-        // If an array, find the active index
-        if (!jsonObj.contains("status") || !jsonObj["status"].is_array()) {
-            return field[0].get<ValueType>();
-        }
-        
-        const auto& statuses = jsonObj["status"];
-        for (size_t i = 0; i < statuses.size(); ++i) {
-            std::string status = statuses[i].get<std::string>();
-            if (status.find("statusActive") != std::string::npos) {
-                return field[i].get<ValueType>();
-            }
-        }
-        
-        // Fallback to first element
-        return field[0].get<ValueType>();
-    };
-    
-    station.RLOIid = getActiveValue("RLOIid", std::string("unknown"));
-    station.catchmentName = getActiveValue("catchmentName", std::string("unknown"));
-    station.dateOpened = getActiveValue("dateOpened", std::string("unknown"));
-    station.label = getActiveValue("label", std::string("unknown"));
-    station.lat = getActiveValue("lat", 0.0);
-    station.lon = getActiveValue("long", 0.0);
-    station.northing = getActiveValue("northing", 0L);
-    station.easting = getActiveValue("easting", 0L);
-    station.notation = jsonObj.value("notation", "unknown");
-    station.town = jsonObj.value("town", "unknown");
-    station.riverName = jsonObj.value("riverName", "unknown");
+Station Station::fromJson(const json& jsonObj) {
+  Station station;
 
-    if (jsonObj.contains("measures") && jsonObj["measures"].is_array())
-    {
-        for (const auto &measureJson : jsonObj["measures"])
-        {
-            station.measures.push_back(Measure::fromJson(measureJson));
-        }
+  // Extract value based on status
+  auto getActiveValue = [&jsonObj](const std::string& key, const auto& defaultValue) {
+    using ValueType = std::remove_cv_t<std::remove_reference_t<decltype(defaultValue)>>;
+
+    if (!jsonObj.contains(key)) {
+      return ValueType(defaultValue);
     }
 
-    return station;
+    const auto& field = jsonObj[key];
+
+    // If it's not an array, return as-is
+    if (!field.is_array()) {
+      return field.get<ValueType>();
+    }
+
+    // If an array, find the active index
+    if (!jsonObj.contains("status") || !jsonObj["status"].is_array()) {
+      return field[0].get<ValueType>();
+    }
+
+    const auto& statuses = jsonObj["status"];
+    for (size_t i = 0; i < statuses.size(); ++i) {
+      std::string status = statuses[i].get<std::string>();
+      if (status.find("statusActive") != std::string::npos) {
+        return field[i].get<ValueType>();
+      }
+    }
+
+    // Fallback to first element
+    return field[0].get<ValueType>();
+  };
+
+  station.RLOIid = getActiveValue("RLOIid", std::string("unknown"));
+  station.catchmentName = getActiveValue("catchmentName", std::string("unknown"));
+  station.dateOpened = getActiveValue("dateOpened", std::string("unknown"));
+  station.label = getActiveValue("label", std::string("unknown"));
+  station.lat = getActiveValue("lat", 0.0);
+  station.lon = getActiveValue("long", 0.0);
+  station.northing = getActiveValue("northing", 0L);
+  station.easting = getActiveValue("easting", 0L);
+  station.notation = jsonObj.value("notation", "unknown");
+  station.town = jsonObj.value("town", "unknown");
+  station.riverName = jsonObj.value("riverName", "unknown");
+
+  if (jsonObj.contains("measures") && jsonObj["measures"].is_array()) {
+    for (const auto& measureJson : jsonObj["measures"]) {
+      station.measures.push_back(Measure::fromJson(measureJson));
+    }
+  }
+
+  return station;
 }

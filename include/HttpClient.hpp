@@ -1,6 +1,6 @@
 #pragma once
-#include <string>
 #include <optional>
+#include <string>
 
-size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::string *userp);
-std::optional<std::string> fetchUrl(const std::string &url);
+size_t writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
+std::optional<std::string> fetchUrl(const std::string& url);

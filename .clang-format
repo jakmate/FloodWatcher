@@ -1,0 +1,8 @@
+BasedOnStyle: LLVM
+IndentAccessModifiers: true
+ColumnLimit: 100
+IncludeBlocks: Merge
+PointerAlignment: Left
+ReferenceAlignment: Left
+AllowShortFunctionsOnASingleLine: Empty
+IndentCaseLabels: true
