@@ -15,6 +15,7 @@ public:
     double getPeriod() const { return period; }
     const std::string &getQualifier() const { return qualifier; }
     const std::string &getUnitName() const { return unitName; }
+    double getLatestReading() const { return latestReading; }
 
 private:
     std::string id;
@@ -23,4 +24,5 @@ private:
     double period;
     std::string qualifier;
     std::string unitName;
+    double latestReading;
 };

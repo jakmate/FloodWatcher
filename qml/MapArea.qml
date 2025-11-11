@@ -6,6 +6,7 @@ Item {
     id: root
     property var selectedStation: null
     signal stationSelected(var station)
+    signal polygonClicked(int warningIndex)
     readonly property real minLat: 53.5
     readonly property real maxLat: 58.0
     readonly property real minLon: -6.0
@@ -54,6 +55,14 @@ Item {
 
                 border.width: 3
                 opacity: 1
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                        root.polygonClicked(index)
+                    }
+                }
             }
         }
 

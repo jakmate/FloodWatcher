@@ -24,6 +24,8 @@ public:
     const std::string &getStatus() const { return status; }
     const std::vector<Measure> &getMeasures() const { return measures; }
 
+    void setMeasures(const std::vector<Measure> &m) { measures = m; }
+
 private:
     std::string RLOIid;
     std::string catchmentName;

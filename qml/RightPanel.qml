@@ -4,12 +4,37 @@ import QtQuick.Controls 2.15
 Rectangle {
     id: root
     property var selectedStation: null
+    property var stationMeasures: []
     signal floodWarningClicked(var polygonPath)
     signal stationClosed()
     
     color: "#2b2b2b"
     border.color: "white"
     border.width: 1
+
+    onSelectedStationChanged: {
+        if (selectedStation) {
+            // Fetch measures for the selected station
+            stationModel.fetchMeasures(selectedStation.index)
+            stationMeasures = stationModel.getMeasures(selectedStation.index)
+        } else {
+            stationMeasures = []
+        }
+    }
+
+    function scrollToWarning(warningIndex) {
+        // Get the warning item and calculate its Y position
+        var itemY = 0
+        for (var i = 0; i < warningIndex; i++) {
+            var item = warningRepeater.itemAt(i)
+            if (item) {
+                itemY += item.height + warningColumn.spacing
+            }
+        }
+        
+        // Set contentY to position the item at the top
+        warningScrollView.contentItem.contentY = itemY
+    }
 
     Column {
         anchors.fill: parent
@@ -91,6 +116,74 @@ Rectangle {
             }
         }
 
+        // Measurements Section
+        Column {
+            spacing: 6
+            visible: selectedStation !== null && stationMeasures.length > 0
+            width: parent.width
+
+            Rectangle { width: parent.width; height: 1; color: "#444444" }
+
+            Text {
+                text: "Measurements"
+                color: "white"
+                font.pixelSize: 14
+                font.bold: true
+            }
+
+            Repeater {
+                model: stationMeasures
+                
+                Column {
+                    width: parent.width
+                    spacing: 2
+                    
+                    Row {
+                        spacing: 8
+                        width: parent.width
+                        
+                        Text {
+                            text: modelData.parameterName
+                            color: "#88ccff"
+                            font.pixelSize: 13
+                            font.bold: true
+                        }
+                        
+                        Text {
+                            text: modelData.qualifier ? "(" + modelData.qualifier + ")" : ""
+                            color: "#aaaaaa"
+                            font.pixelSize: 11
+                            visible: modelData.qualifier !== ""
+                        }
+                    }
+                    
+                    Row {
+                        spacing: 8
+                        
+                        Text {
+                            text: "Latest:"
+                            color: "#aaaaaa"
+                            font.pixelSize: 12
+                        }
+                        
+                        Text {
+                            text: modelData.latestReading !== undefined && modelData.latestReading !== null
+                                  ? modelData.latestReading.toFixed(2) + " " + modelData.unitName
+                                  : "No data"
+                            color: "white"
+                            font.pixelSize: 12
+                        }
+                    }
+                    
+                    Rectangle {
+                        width: parent.width
+                        height: 1
+                        color: "#333333"
+                    }
+                }
+            }
+        }
+
         Rectangle { width: parent.width; height: 1; color: "#444444" }
 
         // Flood Warnings Section
@@ -102,6 +195,7 @@ Rectangle {
         }
 
         ScrollView {
+            id: warningScrollView
             width: parent.width
             height: parent.parent.height - y - 30
             clip: true
@@ -111,15 +205,18 @@ Rectangle {
             ScrollBar.vertical.policy: ScrollBar.AsNeeded
 
             Column {
+                id: warningColumn
                 width: parent.parent.width
                 spacing: 12
 
                 Repeater {
+                    id: warningRepeater
                     model: floodWarningModel
 
                     Rectangle {
+                        id: warningItem
                         width: parent.width - 16
-                        height: warningColumn.height + 16
+                        height: warningItemColumn.height + 16
                         color: "#3a3a3a"
                         radius: 6
                         border.color: {
@@ -141,7 +238,7 @@ Rectangle {
                         }
 
                         Column {
-                            id: warningColumn
+                            id: warningItemColumn
                             anchors.margins: 8
                             anchors.left: parent.left
                             anchors.right: parent.right

@@ -1,6 +1,7 @@
 #include "FloodWarningModel.hpp"
 #include <algorithm>
 #include <QGeoCoordinate>
+#include <iostream>
 
 FloodWarningModel::FloodWarningModel(const std::vector<FloodWarning> &warnings, QObject *parent)
     : QAbstractListModel(parent), m_warnings(warnings)

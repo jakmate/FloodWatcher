@@ -10,5 +10,19 @@ Measure Measure::fromJson(const json &jsonObj)
     measure.period = jsonObj.value("period", 0.0);
     measure.qualifier = jsonObj.value("qualifier", "");
     measure.unitName = jsonObj.value("unitName", "");
+
+    if (jsonObj.contains("latestReading"))
+    {
+        const auto &reading = jsonObj["latestReading"];
+        if (reading.is_object() && reading.contains("value"))
+        {
+            measure.latestReading = reading["value"].get<double>();
+        }
+        else if (reading.is_number())
+        {
+            measure.latestReading = reading.get<double>();
+        }
+    }
+
     return measure;
 }

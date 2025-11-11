@@ -1,6 +1,7 @@
 import QtQuick 2.15
 import QtLocation 5.15
 import QtPositioning 5.15
+import QtQuick.Window 2.15
 
 Window {
     id: root
@@ -16,7 +17,7 @@ Window {
         name: "osm"
         PluginParameter {
             name: "osm.mapping.custom.host"
-            value: "https://tile.openstreetmap.org/ "
+            value: "https://tile.openstreetmap.org/"
         }
     }
 
@@ -83,6 +84,10 @@ Window {
 
             onStationSelected: (station) => {
                 root.selectedStation = station
+            }
+
+            onPolygonClicked: (warningIndex) => {
+                rightPanel.scrollToWarning(warningIndex)
             }
         }
 
