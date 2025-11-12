@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  lint_cpp:
+  lint-cpp:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -40,7 +40,7 @@ jobs:
         run: |
           echo "Linting cpp done"
     
-  lint_qml:
+  lint-qml:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
