@@ -1,0 +1,103 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            libcurl4-openssl-dev \
+            nlohmann-json3-dev \
+            qt6-base-dev \
+            qt6-declarative-dev \
+            qt6-positioning-dev
+
+      - name: Configure CMake
+        run: cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flood_monitor-linux
+          path: build/flood_monitor
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.6.0'
+          modules: 'qtpositioning'
+
+      - name: Setup vcpkg
+        uses: microsoft/setup-vcpkg@v1
+        with:
+          vcpkg-version: 'latest'
+
+      - name: Install dependencies
+        run: vcpkg install curl nlohmann-json
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -G "Visual Studio 17 2022" `
+            -DCMAKE_TOOLCHAIN_FILE=$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake `
+            -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flood_monitor-windows
+          path: build/Release/flood_monitor.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Install dependencies
+        run: |
+          brew install cmake ninja curl nlohmann-json qt@6
+
+      - name: Configure CMake
+        run: |
+          export Qt6_DIR=$(brew --prefix qt@6)/lib/cmake/Qt6
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH=$(brew --prefix qt@6)
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: flood_monitor-macos
+          path: build/flood_monitor

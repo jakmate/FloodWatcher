@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Find required packages
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Positioning)
+find_package(Qt6 REQUIRED COMPONENTS Gui Qml Positioning)
 
 # Source files
 set(SOURCES
@@ -53,7 +53,6 @@ target_link_libraries(flood_monitor
     PRIVATE
         CURL::libcurl
         nlohmann_json::nlohmann_json
-        Qt6::Core
         Qt6::Gui
         Qt6::Qml
         Qt6::Positioning
