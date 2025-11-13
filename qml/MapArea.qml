@@ -43,15 +43,15 @@ Item {
                 path: model.polygonPath
                 property int sev: Number(model.severityLevel)
 
-                color: sev === 1 ? Qt.rgba(1, 0, 0, 0.5)
-                    : sev === 2 ? Qt.rgba(1, 165/255, 0, 0.5)
-                    : sev === 3 ? Qt.rgba(1, 1, 0, 0.5)
-                    : Qt.rgba(0, 0, 1, 0.5)
+                color: sev === 1 ? Qt.rgba(1, 0.27, 0.27, 0.5)
+                    : sev === 2 ? Qt.rgba(1, 0.6, 0.27, 0.5)
+                    : sev === 3 ? Qt.rgba(1, 0.87, 0.27, 0.5)
+                    : Qt.rgba(0.53, 0.53, 0.53, 0.5)
 
-                border.color: sev === 1 ? "#C80000"
-                            : sev === 2 ? "#C86400"
-                            : sev === 3 ? "#C8C800"
-                            : "#0000C8"
+                border.color: sev === 1 ? "#ff4444"
+                            : sev === 2 ? "#ff9944"
+                            : sev === 3 ? "#ffdd44"
+                            : "#888888"
 
                 border.width: 3
                 opacity: 1
@@ -81,7 +81,7 @@ Item {
                         if (root.selectedStation && root.selectedStation.index === index) {
                             return "red"
                         }
-                        return "gray"
+                        return "black"
                     }
 
                     MouseArea {

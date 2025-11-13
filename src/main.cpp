@@ -64,6 +64,9 @@ int main(int argc, char* argv[]) {
     engine.rootContext()->setContextProperty("floodWarningModel", &warningModel);
     engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
 
+    // Start auto-update after QML is loaded
+    warningModel.startAutoUpdate();
+
     return QGuiApplication::exec();
   } catch (const std::exception& e) {
     qCritical("Unhandled exception: %s", e.what());

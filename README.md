@@ -8,6 +8,14 @@
 Real-time flood warning monitor for the UK using Environment Agency data. This will updated progressively.
 Features an interactive map dashboard built with Qt that displays flood warnings, monitoring stations, and water level measurements.
 
+## To Do
+
+- Remove redundant parsing for measurements
+- Load warnings in bg on launch??? Maybe ignore severrity level 4?
+- Animation in panel when warning clicked on map
+- Highlight selected warning?
+- Add qmlformat to .yml
+
 ## Requirements
 
 - C++17 or later

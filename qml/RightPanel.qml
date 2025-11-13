@@ -69,7 +69,7 @@ Rectangle {
                 }
                 MouseArea {
                     anchors.fill: parent
-                    onClicked: {
+                    onClicked: (mouse) => {
                         root.stationClosed()
                     }
                 }
@@ -216,7 +216,6 @@ Rectangle {
                     Rectangle {
                         id: warningItem
                         width: parent.width - 16
-                        height: warningItemColumn.height + 16
                         color: "#3a3a3a"
                         radius: 6
                         border.color: {
@@ -227,12 +226,30 @@ Rectangle {
                         }
                         border.width: 2
 
+                        property bool expanded: false
+                        property bool showExpandButton: model.message && model.message !== ""
+
+                        // Calculate height based on content and expanded state
+                        height: {
+                            var contentHeight = warningItemColumn.height + 16
+                            if (showExpandButton) {
+                                return contentHeight + expandButton.height + 8
+                            }
+                            return contentHeight
+                        }
+
+                        // Main clickable area for map navigation
                         MouseArea {
+                            id: mapNavigationArea
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: {
-                                if (model.polygonPath && model.polygonPath.length > 0) {
-                                    root.floodWarningClicked(model.polygonPath)
+
+                            onClicked: (mouse) => {
+                                // Only trigger map navigation if we didn't click on the expand button
+                                if (!expandButton.containsMouse) {
+                                    if (model.polygonPath && model.polygonPath.length > 0) {
+                                        root.floodWarningClicked(model.polygonPath)
+                                    }
                                 }
                             }
                         }
@@ -271,12 +288,47 @@ Rectangle {
                             }
 
                             Text {
+                                id: messageText
                                 text: model.message || ""
                                 color: "#aaaaaa"
                                 font.pixelSize: 11
                                 wrapMode: Text.WordWrap
                                 width: parent.width
-                                visible: model.message !== ""
+                                visible: warningItem.expanded && model.message !== ""
+                            }
+                        }
+
+                        // Expand/Collapse button
+                        Rectangle {
+                            id: expandButton
+                            anchors {
+                                bottom: parent.bottom
+                                horizontalCenter: parent.horizontalCenter
+                                bottomMargin: 8
+                            }
+                            width: 80
+                            height: 24
+                            radius: 4
+                            color: "#4a4a4a"
+                            visible: warningItem.showExpandButton
+
+                            // Handles the expand/collapse functionality
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: (mouse) => {
+                                    warningItem.expanded = !warningItem.expanded
+                                    // Prevent this click from propagating to the parent MouseArea
+                                    mouse.accepted = true
+                                }
+                            }
+
+                            Text {
+                                anchors.centerIn: parent
+                                text: warningItem.expanded ? "▲" : "▼"
+                                color: "white"
+                                font.pixelSize: 12
+                                font.bold: true
                             }
                         }
                     }

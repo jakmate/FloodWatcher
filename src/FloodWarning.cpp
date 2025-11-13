@@ -13,6 +13,7 @@ FloodWarning FloodWarning::fromJson(const json& jsonObj) {
   warning.timeMessageChanged = jsonObj.value("timeMessageChanged", "");
   warning.timeRaised = jsonObj.value("timeRaised", "");
   warning.timeSeverityChanged = jsonObj.value("timeSeverityChanged", "");
+  warning.message = jsonObj.value("message", "");
 
   if (jsonObj.contains("floodArea") && jsonObj["floodArea"].is_object()) {
     const auto& floodArea = jsonObj["floodArea"];
