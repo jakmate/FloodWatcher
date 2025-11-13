@@ -16,6 +16,7 @@ std::optional<std::string> fetchUrl(const std::string& url) {
   }
 
   std::string readBuffer;
+  curl_easy_setopt(curl, CURLOPT_USERAGENT, "FloodMonitor/0.1");
   curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
   curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);

@@ -1,6 +1,5 @@
 #include "Station.hpp"
 #include "HttpClient.hpp"
-#include <curl/curl.h>
 #include <iostream>
 
 Station Station::fromJson(const json& jsonObj) {

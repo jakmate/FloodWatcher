@@ -1,6 +1,5 @@
 #include "FloodWarning.hpp"
 #include "HttpClient.hpp"
-#include <curl/curl.h>
 #include <iostream>
 
 FloodWarning FloodWarning::fromJson(const json& jsonObj) {
