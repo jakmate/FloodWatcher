@@ -1,4 +1,4 @@
-name: Build Linux
+name: Build Linux AppImage
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
 jobs:
   build-linux:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
@@ -18,6 +19,8 @@ jobs:
           sudo apt-get install -y \
             cmake \
             ninja-build \
+            wget \
+            xz-utils \
             libcurl4-openssl-dev \
             nlohmann-json3-dev \
             qtbase5-dev \
@@ -26,15 +29,55 @@ jobs:
             qtlocation5-dev \
             qtquickcontrols2-5-dev \
             libgl1-mesa-dev \
-            libxcb-xinerama0
+            libxcb-xinerama0 \
+            libfuse2 || true
 
       - name: Configure and Build
         run: |
           cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build build
 
-      - name: Upload Executable
+      - name: Package AppImage (linuxdeployqt)
+        run: |
+          set -euo pipefail
+
+          APPDIR=AppDir
+          mkdir -p ${APPDIR}/usr/bin ${APPDIR}/usr/share/applications ${APPDIR}/usr/share/icons/hicolor/256x256/apps
+
+          # copy executable (adjust path if your target binary name/location differs)
+          cp build/flood_monitor ${APPDIR}/usr/bin/
+
+          # create a .desktop file
+          cat > ${APPDIR}/usr/share/applications/flood_monitor.desktop <<'EOF'
+          [Desktop Entry]
+          Version=0.1
+          Type=Application
+          Name=Flood Monitor
+          Comment=Flood monitoring application
+          Exec=flood_monitor
+          Icon=flood_monitor
+          Categories=Utility;
+          EOF
+
+          # download linuxdeployqt continuous AppImage
+          LINUXDEPLOYQT=linuxdeployqt-continuous-x86_64.AppImage
+          wget -q -O ${LINUXDEPLOYQT} https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage
+          chmod +x ${LINUXDEPLOYQT}
+
+          # run linuxdeployqt to bundle Qt, QML and other libraries into an AppImage
+          # -qmldir points to your QML sources (adjust if needed)
+          ./${LINUXDEPLOYQT} ${APPDIR}/usr/share/applications/flood_monitor.desktop \
+            -qmldir=${PWD}/src \
+            -appimage \
+            -bundle-non-qt-libs || true
+
+          # list produced AppImage(s)
+          ls -lh *.AppImage || true
+        shell: bash
+
+      - name: Upload AppImage artifact
         uses: actions/upload-artifact@v4
         with:
-          name: flood_monitor-linux
-          path: build/flood_monitor
+          name: flood_monitor-linux-appimage
+          path: |
+            *.AppImage

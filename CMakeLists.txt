@@ -11,17 +11,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Find required packages
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Quick Gui Qml Location Positioning QuickControls2)
 
-# Try Qt6 first, fallback to Qt5
-find_package(Qt6 COMPONENTS Gui Qml Positioning Location QuickControls2 QUIET)
-if(Qt6_FOUND)
-    set(QT_VERSION_MAJOR 6)
-    message(STATUS "Using Qt6")
-else()
-    find_package(Qt5 REQUIRED COMPONENTS Quick Gui Qml Location Positioning QuickControls2)
-    set(QT_VERSION_MAJOR 5)
-    message(STATUS "Using Qt5")
-endif()
+set(QT_VERSION_MAJOR 5)
+message(STATUS "Using Qt5")
 
 # Source files
 set(SOURCES
@@ -58,37 +51,19 @@ add_executable(flood_monitor
 # Include directories
 target_include_directories(flood_monitor PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
-if(WIN32)
-    set(CURL_STATICLIB ON)
-    target_compile_definitions(flood_monitor PRIVATE CURL_STATICLIB)
-endif()
-
 # Link libraries
-if(QT_VERSION_MAJOR EQUAL 6)
-    target_link_libraries(flood_monitor
-        PRIVATE
-            CURL::libcurl
-            nlohmann_json::nlohmann_json
-            Qt6::Quick
-            Qt6::Gui
-            Qt6::Qml
-            Qt6::Location
-            Qt6::Positioning
-            Qt6::QuickControls2
-    )
-else()
-    target_link_libraries(flood_monitor
-        PRIVATE
-            CURL::libcurl
-            nlohmann_json::nlohmann_json
-            Qt5::Quick
-            Qt5::Gui
-            Qt5::Qml
-            Qt5::Location
-            Qt5::Positioning
-            Qt5::QuickControls2
-    )
-endif()
+target_link_libraries(flood_monitor
+    PRIVATE
+        CURL::libcurl
+        nlohmann_json::nlohmann_json
+        Qt5::Quick
+        Qt5::Gui
+        Qt5::Qml
+        Qt5::Location
+        Qt5::Positioning
+        Qt5::QuickControls2
+        z
+)
 
 # Compiler warnings
 if(MSVC)
