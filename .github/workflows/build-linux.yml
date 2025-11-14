@@ -1,4 +1,4 @@
-name: Build Linux AppImage
+name: Build Linux
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout repository
@@ -44,7 +44,7 @@ jobs:
           APPDIR=AppDir
           mkdir -p ${APPDIR}/usr/bin ${APPDIR}/usr/share/applications ${APPDIR}/usr/share/icons/hicolor/256x256/apps
 
-          # copy executable (adjust path if your target binary name/location differs)
+          # copy executable
           cp build/flood_monitor ${APPDIR}/usr/bin/
 
           # create a .desktop file

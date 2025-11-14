@@ -8,34 +8,62 @@ on:
 jobs:
   build-windows:
     runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install Qt
+      - name: Install Qt (5.15)
         uses: jurplel/install-qt-action@v4
         with:
           version: '5.15.0'
-          modules: 'qtpositioning'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
 
       - name: Setup vcpkg
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
+          git clone https://github.com/microsoft/vcpkg.git vcpkg
           .\vcpkg\bootstrap-vcpkg.bat
-          .\vcpkg\vcpkg install curl nlohmann-json --triplet=x64-windows
+          .\vcpkg\vcpkg.exe install curl nlohmann-json --triplet x64-windows
 
-      - name: Configure and Build
+      - name: Configure and Build (MSVC x64)
         run: |
-          cmake -B build -DCMAKE_TOOLCHAIN_FILE="$PWD/vcpkg/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release
+          # Use the vcpkg toolchain for dependency resolution
+          cmake -B build -G "Visual Studio 17 2022" -A x64 `
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}\vcpkg\scripts\buildsystems\vcpkg.cmake" `
+            -DCMAKE_BUILD_TYPE=Release
           cmake --build build --config Release
 
-      - name: Copy DLLs
+      - name: Run windeployqt to collect Qt deps
         run: |
-          mkdir build/Release 2>nul
-          copy vcpkg\installed\x64-windows\bin\*.dll build\Release\
+          $exe = Join-Path $PWD "build\Release\flood_monitor.exe"
+          if (-not (Test-Path $exe)) {
+            Write-Error "Executable not found: $exe"
+            exit 1
+          }
 
-      - name: Upload Executable
+          # windeployqt should be on PATH thanks to jurplel/install-qt-action.
+          # --qmldir ensures QML imports are bundled
+          windeployqt.exe --qmldir "${{ github.workspace }}\src" --compiler-runtime $exe
+
+          # show what was collected
+          Get-ChildItem -Path (Split-Path $exe) -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+
+      - name: Prepare ZIP of deployment folder
+        run: |
+          $deployDir = Join-Path $PWD "build\Release"
+          $zipPath = Join-Path $PWD "flood_monitor-windows.zip"
+
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path "$deployDir\*" -DestinationPath $zipPath -Force
+          Write-Host "Created $zipPath (`$(Get-Item $zipPath).Length bytes)"
+
+      - name: Upload Windows deployment artifact
         uses: actions/upload-artifact@v4
         with:
           name: flood_monitor-windows
-          path: build/Release/flood_monitor.exe
+          path: flood_monitor-windows.zip
