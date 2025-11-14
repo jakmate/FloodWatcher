@@ -34,7 +34,7 @@ Item {
         center: QtPositioning.coordinate(53.0, -1.4)
         zoomLevel: 6.125
         activeMapType: map.supportedMapTypes[map.supportedMapTypes.length - 1]
-        property geoCoordinate startCentroid
+        property variant startCentroid
 
         // Flood warning polygons
         MapItemView {

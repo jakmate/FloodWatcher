@@ -13,12 +13,12 @@ find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
 
 # Try Qt6 first, fallback to Qt5
-find_package(Qt6 COMPONENTS Gui Qml Positioning QUIET)
+find_package(Qt6 COMPONENTS Gui Qml Positioning Location QuickControls2 QUIET)
 if(Qt6_FOUND)
     set(QT_VERSION_MAJOR 6)
     message(STATUS "Using Qt6")
 else()
-    find_package(Qt5 REQUIRED COMPONENTS Quick Gui Qml Location)
+    find_package(Qt5 REQUIRED COMPONENTS Quick Gui Qml Location Positioning QuickControls2)
     set(QT_VERSION_MAJOR 5)
     message(STATUS "Using Qt5")
 endif()
@@ -69,9 +69,12 @@ if(QT_VERSION_MAJOR EQUAL 6)
         PRIVATE
             CURL::libcurl
             nlohmann_json::nlohmann_json
+            Qt6::Quick
             Qt6::Gui
             Qt6::Qml
+            Qt6::Location
             Qt6::Positioning
+            Qt6::QuickControls2
     )
 else()
     target_link_libraries(flood_monitor
@@ -82,6 +85,8 @@ else()
             Qt5::Gui
             Qt5::Qml
             Qt5::Location
+            Qt5::Positioning
+            Qt5::QuickControls2
     )
 endif()
 
