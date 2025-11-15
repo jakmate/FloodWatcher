@@ -39,23 +39,60 @@ jobs:
       - name: Finish
         run: |
           echo "Linting cpp done"
-    
+
   lint-qml:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qtdeclarative5-dev-tools
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
 
-      # Need to add qmlformat
+      - name: Install aqtinstall
+        run: |
+          pip install aqtinstall
+
+      - name: Install Qt 6.10.0
+        run: |
+          aqt install-qt linux desktop 6.10.0 linux_gcc_64 -m qtlocation qtpositioning
+
+      - name: Add Qt tools to PATH
+        run: |
+          echo "${{ github.workspace }}/6.10.0/gcc_64/bin" >> $GITHUB_PATH
 
       - name: Run qmllint
         run: |
-          find qml -type f -name '*.qml' -exec qmllint {} +
+          lint_failed=0
+          while IFS= read -r -d '' file; do
+            if ! qmllint --max-warnings=0 "$file"; then
+              echo "QML not linted: $file"
+              lint_failed=1
+            fi
+          done < <(find qml -type f -name '*.qml' -print0)
+          
+          if [ "$lint_failed" -ne 0 ]; then
+            echo "qmllint found errors"
+            exit 1
+          fi
+
+      - name: Run qmlformat check
+        run: |
+          set -uo pipefail
+          unformatted=0
+          while IFS= read -r -d '' file; do
+            if ! qmlformat "$file" | diff -u "$file" - > /dev/null; then
+              echo "QML not formatted: $file"
+              unformatted=1
+            fi
+          done < <(find qml -type f -name '*.qml' -print0)
+
+          if [ "$unformatted" -ne 0 ]; then
+            echo "Some files not formatted, run qmlformat"
+            exit 1
+          fi
 
       - name: Finish
         run: |
