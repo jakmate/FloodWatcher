@@ -10,6 +10,7 @@ class FloodMonitoringData {
   public:
     void parseFloodWarnings(const json& apiResponse);
     void parseStations(const json& apiResponse);
+    void fetchAllPolygonsAsync();
 
     const std::vector<FloodWarning>& getFloodWarnings() const {
       return floodWarnings;

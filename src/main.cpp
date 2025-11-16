@@ -7,15 +7,24 @@
 #include <QQmlContext>
 #include <iostream>
 
+/* static inline long msSince(std::chrono::steady_clock::time_point t) {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t)
+      .count();
+} */
+
 int main(int argc, char* argv[]) {
+  // auto t0 = std::chrono::steady_clock::now();
+  // std::cout << "startup: " << msSince(t0) << " ms\n";
   try {
     QGuiApplication app(argc, argv);
 
     // Fetch data
     FloodMonitoringData monitoringData;
 
+    // auto t1 = std::chrono::steady_clock::now();
     auto response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/"
                              "id/stations?status=Active");
+    // std::cout << "fetch stations: " << msSince(t1) << " ms\n";
 
     if (!response) {
       std::cerr << "Failed to fetch stations data" << '\n';
@@ -24,6 +33,7 @@ int main(int argc, char* argv[]) {
 
     std::string readBuffer = *response;
 
+    // auto t2 = std::chrono::steady_clock::now();
     try {
       json data = json::parse(readBuffer);
       monitoringData.parseStations(data);
@@ -33,11 +43,13 @@ int main(int argc, char* argv[]) {
       std::cerr << "Raw response:\n" << readBuffer << '\n';
       return 1;
     }
+    // std::cout << "parse stations: " << msSince(t2) << " ms\n";
 
     // Create model
     StationModel model(monitoringData.getStations());
-
+    // auto t3 = std::chrono::steady_clock::now();
     response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
+    // std::cout << "fetch warnings: " << msSince(t3) << " ms\n";
 
     if (!response) {
       std::cerr << "Failed to fetch flood warning data" << '\n';
@@ -46,6 +58,7 @@ int main(int argc, char* argv[]) {
 
     readBuffer = *response;
 
+    // auto t4 = std::chrono::steady_clock::now();
     try {
       json data = json::parse(readBuffer);
       monitoringData.parseFloodWarnings(data);
@@ -55,6 +68,11 @@ int main(int argc, char* argv[]) {
       std::cerr << "Raw response:\n" << readBuffer << '\n';
       return 1;
     }
+    // std::cout << "parse warnings: " << msSince(t4) << " ms\n";
+
+    // auto t5 = std::chrono::steady_clock::now();
+    monitoringData.fetchAllPolygonsAsync();
+    // std::cout << "fetch all polygons async: " << msSince(t5) << " ms\n";
 
     FloodWarningModel warningModel(monitoringData.getFloodWarnings());
 
@@ -66,7 +84,7 @@ int main(int argc, char* argv[]) {
 
     // Start auto-update after QML is loaded
     warningModel.startAutoUpdate();
-
+    // std::cout << "total: " << msSince(t0) << " ms\n";
     return QGuiApplication::exec();
   } catch (const std::exception& e) {
     qCritical("Unhandled exception: %s", e.what());

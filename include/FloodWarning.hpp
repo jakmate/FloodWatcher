@@ -9,6 +9,7 @@ using json = nlohmann::json;
 class FloodWarning {
   public:
     static FloodWarning fromJson(const json& jsonObj);
+    static MultiPolygon parseGeoJsonPolygon(const json& geoJson);
 
     const std::string& getId() const {
       return id;
@@ -43,8 +44,15 @@ class FloodWarning {
     const std::string& getCounty() const {
       return county;
     }
+    const std::string& getPolygonUrl() const {
+      return polygonUrl;
+    }
     const std::optional<MultiPolygon>& getFloodAreaPolygon() const {
       return floodAreaPolygon;
+    }
+
+    void setFloodAreaPolygon(const std::optional<MultiPolygon>& polygon) {
+      floodAreaPolygon = polygon;
     }
 
   private:
@@ -59,9 +67,9 @@ class FloodWarning {
     std::string message;
     std::string region;
     std::string county;
+    std::string polygonUrl;
     std::optional<MultiPolygon> floodAreaPolygon;
 
     static LinearRing parseLinearRing(const json& ringJson);
     static MyPolygon parsePolygon(const json& polygonJson);
-    static MultiPolygon parseGeoJsonPolygon(const json& geoJson);
 };

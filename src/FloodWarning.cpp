@@ -21,22 +21,7 @@ FloodWarning FloodWarning::fromJson(const json& jsonObj) {
     warning.county = floodArea.value("county", "unknown");
 
     if (floodArea.contains("polygon")) {
-      try {
-        std::string polygonUrl = floodArea.value("polygon", "");
-        // std::cout << "Fetching polygon from: " << polygonUrl;
-
-        auto polygonData = fetchUrl(polygonUrl);
-        if (polygonData) {
-          try {
-            json polygonJson = json::parse(*polygonData);
-            warning.floodAreaPolygon = parseGeoJsonPolygon(polygonJson["features"][0]["geometry"]);
-          } catch (const std::exception& e) {
-            std::cerr << "Error parsing polygon from URL: " << e.what();
-          }
-        }
-      } catch (const std::exception& e) {
-        std::cerr << "Error parsing embedded polygon: " << e.what();
-      }
+      warning.polygonUrl = floodArea.value("polygon", "");
     }
   }
 
