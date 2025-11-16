@@ -60,8 +60,8 @@ int main(int argc, char* argv[]) {
 
     // Load QML
     QQmlApplicationEngine engine;
-    engine.rootContext()->setContextProperty("stationModel", &model);
-    engine.rootContext()->setContextProperty("floodWarningModel", &warningModel);
+    engine.setInitialProperties({{"stationModel", QVariant::fromValue(&model)},
+                                 {"floodWarningModel", QVariant::fromValue(&warningModel)}});
     engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
 
     // Start auto-update after QML is loaded
