@@ -1,5 +1,6 @@
 #include "FloodWarningModel.hpp"
 #include "FloodMonitoringData.hpp"
+#include <HttpClient.hpp>
 #include <QDateTime>
 #include <QGeoCoordinate>
 #include <algorithm>
@@ -76,7 +77,8 @@ void FloodWarningModel::fetchWarnings() {
   std::cout << "Fetching flood warnings at "
             << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString() << "\n";
 
-  auto response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
+  auto response =
+      HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
 
   if (!response) {
     std::cerr << "Failed to fetch flood warnings\n";

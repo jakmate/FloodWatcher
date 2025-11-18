@@ -1,6 +1,5 @@
 #pragma once
 #include "FloodWarning.hpp"
-#include "HttpClient.hpp"
 #include <QAbstractListModel>
 #include <QTimer>
 #include <QVariantList>

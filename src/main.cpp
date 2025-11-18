@@ -7,14 +7,15 @@
 #include <QQmlContext>
 #include <iostream>
 
-/* static inline long msSince(std::chrono::steady_clock::time_point t) {
+static inline long msSince(std::chrono::steady_clock::time_point t) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t)
       .count();
-} */
+}
 
 int main(int argc, char* argv[]) {
   // auto t0 = std::chrono::steady_clock::now();
   // std::cout << "startup: " << msSince(t0) << " ms\n";
+
   try {
     QGuiApplication app(argc, argv);
 
@@ -22,8 +23,8 @@ int main(int argc, char* argv[]) {
     FloodMonitoringData monitoringData;
 
     // auto t1 = std::chrono::steady_clock::now();
-    auto response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/"
-                             "id/stations?status=Active");
+    auto response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/"
+                                         "id/stations?status=Active");
     // std::cout << "fetch stations: " << msSince(t1) << " ms\n";
 
     if (!response) {
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]) {
     // Create model
     StationModel model(monitoringData.getStations());
     // auto t3 = std::chrono::steady_clock::now();
-    response = fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
+    response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
     // std::cout << "fetch warnings: " << msSince(t3) << " ms\n";
 
     if (!response) {

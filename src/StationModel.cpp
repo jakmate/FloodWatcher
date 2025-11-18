@@ -1,5 +1,5 @@
 #include "StationModel.hpp"
-#include "HttpClient.hpp"
+#include <HttpClient.hpp>
 #include <iostream>
 #include <nlohmann/json.hpp>
 
@@ -97,7 +97,7 @@ bool StationModel::fetchMeasures(int index) {
   std::string url = "https://environment.data.gov.uk/flood-monitoring/id/stations/" +
                     station.getNotation() + "/measures";
 
-  auto response = fetchUrl(url);
+  auto response = HttpClient::fetchUrl(url);
   if (!response) {
     std::cerr << "Failed to fetch measures for station " << station.getNotation() << '\n';
     return false;
