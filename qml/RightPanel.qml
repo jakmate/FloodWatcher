@@ -13,6 +13,14 @@ Rectangle {
     signal floodWarningClicked(var polygonPath)
     signal stationClosed
 
+    NumberAnimation {
+        id: scrollAnimation
+        target: warningScrollView.contentItem
+        property: "contentY"
+        duration: 300
+        easing.type: Easing.OutCubic
+    }
+
     function scrollToWarning(warningIndex) {
         // Get the warning item and calculate its Y position
         var itemY = 0;
@@ -21,8 +29,9 @@ Rectangle {
             if (item)
                 itemY += item.height + warningColumn.spacing;
         }
-        // Set contentY to position the item at the top
-        warningScrollView.contentItem.contentY = itemY;
+        // Animate to target position
+        scrollAnimation.to = itemY;
+        scrollAnimation.restart();
     }
 
     color: "#2b2b2b"

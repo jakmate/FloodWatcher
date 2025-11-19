@@ -13,9 +13,7 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 ## To Do
 
 - Remove redundant parsing for measurements
-- Load warnings in bg on launch??? Maybe ignore severrity level 4?
-- Animation in panel when warning clicked on map
-- Highlight selected warning?
+- Load warnings in bg on launch?
 - Fix builds (Decide if qt5 and qt6 especially for linux since ubuntu-latest is missing qt location)
 
 ## Requirements
