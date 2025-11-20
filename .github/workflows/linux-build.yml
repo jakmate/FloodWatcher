@@ -1,0 +1,159 @@
+name: Linux Build
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-appimage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libcurl4-openssl-dev \
+            libgl1-mesa-dev \
+            libegl1-mesa-dev \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-render-util0 \
+            libxcb-xinerama0 \
+            libxcb-xinput0 \
+            libxcb-xfixes0 \
+            libxcb-shape0 \
+            libxcb-randr0 \
+            libxcb-sync1 \
+            libxcb-xkb1 \
+            libxcb-shm0 \
+            libxcb-render0 \
+            libxcb-util1 \
+            nlohmann-json3-dev \
+            patchelf \
+            desktop-file-utils \
+            fuse \
+            libfuse2 \
+            wget \
+            curl \
+            ca-certificates \
+            cmake \
+            build-essential \
+            imagemagick \
+            libqt6serialport6
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install aqtinstall
+        run: pip install aqtinstall
+
+      - name: Install Qt 6.10.0
+        run: |
+          aqt install-qt linux desktop 6.10.0 linux_gcc_64 -m qtlocation qtpositioning
+          echo "${{ github.workspace }}/6.10.0/gcc_64/bin" >> $GITHUB_PATH
+          echo "${{ github.workspace }}/6.10.0/gcc_64/lib" >> /etc/ld.so.conf.d/qt6.conf
+          sudo ldconfig
+
+      - name: Install linuxdeploy and plugins
+        run: |
+          # Download linuxdeploy
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage
+          
+          # Download Qt plugin
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-plugin-qt-x86_64.AppImage
+          
+          # Download AppImage plugin
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-appimage/releases/download/continuous/linuxdeploy-plugin-appimage-x86_64.AppImage
+          chmod +x linuxdeploy-plugin-appimage-x86_64.AppImage
+          
+          # Set executable flags
+          chmod +x *.AppImage
+
+      - name: Create build directory
+        run: mkdir -p build
+
+      - name: Configure project
+        working-directory: build
+        run: |
+          cmake .. \
+            -DCMAKE_PREFIX_PATH=${{ github.workspace }}/6.10.0/gcc_64 \
+            -DCMAKE_INSTALL_PREFIX=/usr
+
+      - name: Build project
+        working-directory: build
+        run: cmake --build . --parallel $(nproc)
+
+      - name: Install project
+        working-directory: build
+        run: DESTDIR=AppDir cmake --install .
+
+      - name: Create AppImage
+        run: |
+          # Make sure the AppDir structure is correct
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          
+          # Create desktop file
+          cat > AppDir/usr/share/applications/flood_monitor.desktop <<EOF
+          [Desktop Entry]
+          Name=Flood Monitor
+          Exec=flood_monitor
+          Icon=flood_monitor
+          Type=Application
+          Categories=Utility;Network;
+          Comment=Monitor flood warnings and water levels
+          EOF
+          
+          # Create icon
+          if [ -f assets/icon.png ]; then
+            cp assets/icon.png AppDir/usr/share/icons/hicolor/256x256/apps/flood_monitor.png
+          else
+            convert -size 256x256 xc:#4a86e8 AppDir/usr/share/icons/hicolor/256x256/apps/flood_monitor.png
+          fi
+          
+          # Set environment variables for linuxdeploy
+          export QML_SOURCES_PATHS=${{ github.workspace }}/qml
+          export QT_DIR=${{ github.workspace }}/6.10.0/gcc_64
+          export LD_LIBRARY_PATH=${{ github.workspace }}/6.10.0/gcc_64/lib:$LD_LIBRARY_PATH
+          
+          # Use linuxdeploy with APPIMAGE_EXTRACT_AND_RUN to avoid FUSE issues
+          APPIMAGE_EXTRACT_AND_RUN=1 ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --executable build/flood_monitor \
+            --desktop-file AppDir/usr/share/applications/flood_monitor.desktop \
+            --icon-file AppDir/usr/share/icons/hicolor/256x256/apps/flood_monitor.png \
+            --plugin qt \
+            --output appimage
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FloodMonitor-AppImage-${{ github.ref_name }}-${{ github.sha }}-${{ runner.os }}
+          path: FloodMonitor-*.AppImage
+          retention-days: 30
+
+      - name: Release AppImage (if tagged)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: FloodMonitor-*.AppImage
+          generate_release_notes: true
