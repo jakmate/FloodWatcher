@@ -65,8 +65,6 @@ jobs:
         run: |
           aqt install-qt linux desktop 6.10.0 linux_gcc_64 -m qtlocation qtpositioning
           echo "${{ github.workspace }}/6.10.0/gcc_64/bin" >> $GITHUB_PATH
-          echo "${{ github.workspace }}/6.10.0/gcc_64/lib" >> /etc/ld.so.conf.d/qt6.conf
-          sudo ldconfig
 
       - name: Install linuxdeploy and plugins
         run: |
