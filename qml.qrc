@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>qml/main.qml</file>
         <file>qml/MapArea.qml</file>
-        <file>qml/RightPanel.qml</file>
+        <file>qml/StationPanel.qml</file>
+        <file>qml/WarningsPanel.qml</file>
     </qresource>
 </RCC>

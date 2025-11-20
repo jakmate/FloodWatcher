@@ -91,6 +91,7 @@ Window {
 
         MapArea {
             id: mapArea
+
             width: parent.width * 0.7
             height: parent.height
             selectedStation: root.selectedStation
@@ -100,26 +101,45 @@ Window {
                 root.selectedStation = station;
             }
             onPolygonClicked: warningIndex => {
-                rightPanel.scrollToWarning(warningIndex);
+                warningsPanel.scrollToWarning(warningIndex);
             }
         }
 
-        RightPanel {
-            id: rightPanel
+        Rectangle {
             width: parent.width * 0.3
             height: parent.height
-            selectedStation: root.selectedStation
-            stationModel: root.stationModel
-            floodWarningModel: root.floodWarningModel
-            onFloodWarningClicked: polygonPath => {
-                var centroid = root.calculateCentroid(polygonPath);
-                if (centroid) {
-                    var zoom = root.calculateZoomForPolygon(polygonPath);
-                    mapArea.panToCoordinate(centroid.lat, centroid.lon, zoom);
+            color: "#2b2b2b"
+            border.color: "white"
+            border.width: 1
+
+            Column {
+                anchors.fill: parent
+                spacing: 0
+
+                StationPanel {
+                    id: stationPanel
+
+                    width: parent.width
+                    height: selectedStation ? implicitHeight : 100
+                    selectedStation: root.selectedStation
+                    stationModel: root.stationModel
+                    onStationClosed: root.selectedStation = null
                 }
-            }
-            onStationClosed: {
-                root.selectedStation = null;
+
+                WarningsPanel {
+                    id: warningsPanel
+
+                    width: parent.width
+                    height: parent.height - stationPanel.height
+                    floodWarningModel: root.floodWarningModel
+                    onFloodWarningClicked: polygonPath => {
+                        var centroid = root.calculateCentroid(polygonPath);
+                        if (centroid) {
+                            var zoom = root.calculateZoomForPolygon(polygonPath);
+                            mapArea.panToCoordinate(centroid.lat, centroid.lon, zoom);
+                        }
+                    }
+                }
             }
         }
     }
