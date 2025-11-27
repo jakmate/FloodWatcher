@@ -34,7 +34,7 @@ Rectangle {
 
     Column {
         anchors.fill: parent
-        anchors.margins: 16
+        anchors.leftMargin: 8
         spacing: 8
 
         // Flood Warnings Section
@@ -57,7 +57,7 @@ Rectangle {
             Column {
                 id: warningColumn
 
-                width: parent.width
+                width: parent.width - 25
                 spacing: 12
 
                 Repeater {

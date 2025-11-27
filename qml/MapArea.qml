@@ -25,6 +25,15 @@ Item {
             map.zoomLevel = zoom;
     }
 
+    function animateTo(lat, lon, zoom) {
+        centerAnimation.to = QtPositioning.coordinate(lat, lon);
+        centerAnimation.start();
+        if (zoom !== undefined) {
+            zoomAnimation.to = zoom;
+            zoomAnimation.start();
+        }
+    }
+
     Plugin {
         id: mapPlugin
 
@@ -34,6 +43,23 @@ Item {
             name: "osm.mapping.custom.host"
             value: "https://tile.openstreetmap.org/"
         }
+    }
+
+    // Explicit animations
+    CoordinateAnimation {
+        id: centerAnimation
+        target: map
+        property: "center"
+        duration: 800
+        easing.type: Easing.InOutCubic
+    }
+
+    NumberAnimation {
+        id: zoomAnimation
+        target: map
+        property: "zoomLevel"
+        duration: 800
+        easing.type: Easing.InOutCubic
     }
 
     Map {

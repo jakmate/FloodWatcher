@@ -28,7 +28,7 @@ Item {
             left: parent.left
             right: parent.right
             top: parent.top
-            margins: 16
+            margins: 8
         }
         spacing: 8
 
@@ -43,6 +43,7 @@ Item {
                 font.bold: true
                 elide: Text.ElideRight
                 width: parent.width - closeBtn.width - 8
+                wrapMode: Text.WordWrap
             }
 
             Rectangle {
