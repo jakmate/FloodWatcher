@@ -48,6 +48,35 @@ add_executable(flood_monitor
 # Include directories
 target_include_directories(flood_monitor PRIVATE ${CMAKE_SOURCE_DIR}/include)
 
+# Enable testing
+enable_testing()
+
+# For coverage
+option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
+
+if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+
+    message(STATUS "Building with coverage flags")
+
+    add_compile_options(
+        -O0
+        -g
+        --coverage
+        -fprofile-arcs
+        -ftest-coverage
+    )
+
+    add_link_options(--coverage)
+
+endif()
+
+
+# Add test directories
+option(BUILD_TESTS "Build tests" ON)
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
 # Link libraries
 target_link_libraries(flood_monitor
     PRIVATE
@@ -63,4 +92,24 @@ if(MSVC)
     target_compile_options(flood_monitor PRIVATE /W4)
 else()
     target_compile_options(flood_monitor PRIVATE -Wall -Wextra -pedantic)
+endif()
+
+if(ENABLE_COVERAGE)
+    find_program(GCOVR gcovr)
+    if(GCOVR)
+        add_custom_target(coverage
+            COMMAND ${CMAKE_COMMAND} -E remove_directory coverage
+            COMMAND ${CMAKE_COMMAND} -E make_directory coverage
+            COMMAND ctest --output-on-failure
+            COMMAND ${GCOVR}
+                -r ${CMAKE_SOURCE_DIR}
+                --filter ${CMAKE_SOURCE_DIR}/src/
+                --filter ${CMAKE_SOURCE_DIR}/include/
+                --html --html-details
+                --print-summary
+                -o coverage/index.html
+            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+            COMMENT "Generating filtered coverage report"
+        )
+    endif()
 endif()
