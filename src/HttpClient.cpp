@@ -35,6 +35,16 @@ HttpClient& HttpClient::getInstance() {
   return instance;
 }
 
+void HttpClient::applyPersistentOptions(CURL* curl) {
+  // Set common options that persist across requests
+  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
+  curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);        // 30 second timeout
+  curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L); // 10 second connect timeout
+  curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);   // Enable keep-alive
+  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""); // Enable gzip/deflate
+}
+
 CURL* HttpClient::getThreadCurlHandle() {
   if (threadCurlHandle == nullptr) {
     threadCurlHandle = curl_easy_init();
@@ -43,14 +53,7 @@ CURL* HttpClient::getThreadCurlHandle() {
                 << '\n';
       return nullptr;
     }
-
-    // Set common options that persist across requests
-    curl_easy_setopt(threadCurlHandle, CURLOPT_FOLLOWLOCATION, 1L);
-    curl_easy_setopt(threadCurlHandle, CURLOPT_WRITEFUNCTION, writeCallback);
-    curl_easy_setopt(threadCurlHandle, CURLOPT_TIMEOUT, 30L);        // 30 second timeout
-    curl_easy_setopt(threadCurlHandle, CURLOPT_CONNECTTIMEOUT, 10L); // 10 second connect timeout
-    curl_easy_setopt(threadCurlHandle, CURLOPT_TCP_KEEPALIVE, 1L);   // Enable keep-alive
-    curl_easy_setopt(threadCurlHandle, CURLOPT_ACCEPT_ENCODING, ""); // Enable gzip/deflate
+    applyPersistentOptions(threadCurlHandle);
   }
   return threadCurlHandle;
 }
@@ -79,12 +82,7 @@ std::optional<std::string> HttpClient::fetchUrl(const std::string& url) {
   curl_easy_reset(curl);
 
   // Re-apply persistent settings
-  curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-  curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writeCallback);
-  curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
-  curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L);
-  curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);
-  curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, "");
+  applyPersistentOptions(curl);
 
   if (res != CURLE_OK) {
     std::cerr << "CURL error for " << url << ": " << curl_easy_strerror(res) << '\n';

@@ -13,9 +13,11 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 ## To Do
 
-- Remove redundant parsing for measurements
 - Load warnings in bg on launch?
 - Fix builds (Decide if qt5 and qt6 especially for linux since ubuntu-latest is missing qt location)
+- Add test coverage for qml?
+- Add cpp tests
+- Improve profiling (hard to read)
 
 ## Requirements
 
@@ -30,9 +32,26 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 ```bash
 git clone https://github.com/jakmate/FloodWatcher.git
 cd FloodWatcher
-mkdir build && cd build
-cmake -G Ninja ..
-cmake --build .
+cmake -GNinja -B build
+cmake --build build
+```
+
+## Testing
+
+```bash
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -B build
+cmake --build build --target test
+cmake --build build --target coverage
+```
+
+## Profiling
+
+```bash
+cmake -GNinja -DENABLE_PROFILING=ON -B build
+cmake --build build
+cd build
+./flood_monitor.exe
+gprof flood_monitor.exe gmon.out > analysis.txt
 ```
 
 ## API Reference

@@ -29,7 +29,6 @@ add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/src/StationModel.cpp
     ${CMAKE_SOURCE_DIR}/src/Measure.cpp
     ${CMAKE_SOURCE_DIR}/src/HttpClient.cpp
-    ${CMAKE_SOURCE_DIR}/src/GeometryTypes.cpp
 )
 
 if(ENABLE_COVERAGE)

@@ -30,6 +30,7 @@ FloodWarning FloodWarning::fromJson(const json& jsonObj) {
 
 LinearRing FloodWarning::parseLinearRing(const json& ringJson) {
   LinearRing ring;
+  ring.reserve(ringJson.size());
   for (const auto& coord : ringJson) {
     if (coord.is_array() && coord.size() >= 2) {
       ring.emplace_back(coord[0].get<double>(), coord[1].get<double>());
@@ -40,10 +41,11 @@ LinearRing FloodWarning::parseLinearRing(const json& ringJson) {
 
 MyPolygon FloodWarning::parsePolygon(const json& polygonJson) {
   MyPolygon polygon;
+  polygon.reserve(polygonJson.size());
   for (const auto& ringJson : polygonJson) {
     LinearRing ring = parseLinearRing(ringJson);
     if (!ring.empty()) {
-      polygon.push_back(ring);
+      polygon.push_back(std::move(ring));
     }
   }
   return polygon;
@@ -51,22 +53,25 @@ MyPolygon FloodWarning::parsePolygon(const json& polygonJson) {
 
 MultiPolygon FloodWarning::parseGeoJsonPolygon(const json& geoJson) {
   MultiPolygon result;
-  auto type = geoJson.value("type", "");
 
   if (!geoJson.contains("coordinates") || !geoJson["coordinates"].is_array()) {
     return result;
   }
 
+  const auto& coords = geoJson["coordinates"];
+  auto type = geoJson.value("type", "");
+
   if (type == "Polygon") {
-    MyPolygon polygon = parsePolygon(geoJson["coordinates"]);
+    MyPolygon polygon = parsePolygon(coords);
     if (!polygon.empty()) {
-      result.push_back(polygon);
+      result.push_back(std::move(polygon));
     }
   } else if (type == "MultiPolygon") {
-    for (const auto& polygonCoords : geoJson["coordinates"]) {
+    result.reserve(coords.size());
+    for (const auto& polygonCoords : coords) {
       MyPolygon polygon = parsePolygon(polygonCoords);
       if (!polygon.empty()) {
-        result.push_back(polygon);
+        result.push_back(std::move(polygon));
       }
     }
   } else {

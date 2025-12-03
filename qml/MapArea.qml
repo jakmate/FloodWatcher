@@ -199,13 +199,13 @@ Item {
 
         Shortcut {
             enabled: map.zoomLevel < map.maximumZoomLevel
-            sequence: StandardKey.ZoomIn
+            sequence: [StandardKey.ZoomIn]
             onActivated: map.zoomLevel = Math.round(map.zoomLevel + 1)
         }
 
         Shortcut {
             enabled: map.zoomLevel > map.minimumZoomLevel
-            sequence: StandardKey.ZoomOut
+            sequence: [StandardKey.ZoomOut]
             onActivated: map.zoomLevel = Math.round(map.zoomLevel - 1)
         }
     }

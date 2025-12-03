@@ -14,8 +14,3 @@ using MyPolygon = std::vector<LinearRing>;
 
 // MultiPolygon for complex flood areas with multiple disconnected polygons
 using MultiPolygon = std::vector<MyPolygon>;
-
-void printCoordinate(const Coordinate& coord);
-void printLinearRing(const LinearRing& ring, const std::string& indent = "    ");
-void printPolygon(const MyPolygon& polygon, const std::string& indent = "  ");
-void printMultiPolygon(const MultiPolygon& multiPolygon, const std::string& indent = "");

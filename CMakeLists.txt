@@ -23,7 +23,6 @@ set(SOURCES
     src/StationModel.cpp
     src/Measure.cpp
     src/HttpClient.cpp
-    src/GeometryTypes.cpp
 )
 
 # Header files
@@ -53,23 +52,24 @@ enable_testing()
 
 # For coverage
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
-
 if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-
     message(STATUS "Building with coverage flags")
-
-    add_compile_options(
-        -O0
-        -g
-        --coverage
-        -fprofile-arcs
-        -ftest-coverage
-    )
-
-    add_link_options(--coverage)
-
+    target_compile_options(flood_monitor PRIVATE -O0 -g --coverage -fprofile-arcs -ftest-coverage)
+    target_link_options(flood_monitor PRIVATE --coverage)
 endif()
 
+
+option(ENABLE_PROFILING "Enable profiling" ON)
+if(ENABLE_PROFILING)
+    message(STATUS "Building with profiling flags")
+    target_compile_definitions(flood_monitor PRIVATE ENABLE_PROFILING_EXIT)
+    if(WIN32 AND MINGW)
+        target_compile_options(flood_monitor PRIVATE -O0 -pg -g -no-pie)
+        target_link_options(flood_monitor PRIVATE -pg -no-pie)
+    elseif(UNIX)
+        target_compile_options(flood_monitor PRIVATE -O0 -g -fno-omit-frame-pointer)
+    endif()
+endif()
 
 # Add test directories
 option(BUILD_TESTS "Build tests" ON)

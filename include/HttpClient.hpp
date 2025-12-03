@@ -26,6 +26,9 @@ class HttpClient {
     // Initialize curl handle for current thread
     static CURL* getThreadCurlHandle();
 
+    // Set common options that persist across requests
+    static void applyPersistentOptions(CURL* curl);
+
     // Write callback as member function
     static size_t writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp);
 

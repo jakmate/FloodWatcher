@@ -40,6 +40,7 @@ jobs:
         gcovr -r .. \
           --filter ../src/ \
           --filter ../include/ \
+          --exclude ../tests/ \
           --xml -o coverage.xml \
           --print-summary
     

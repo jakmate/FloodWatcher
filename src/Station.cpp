@@ -7,7 +7,7 @@ Station Station::fromJson(const json& jsonObj) {
   Station station;
 
   // Extract value based on status
-  auto getActiveValue = [&jsonObj](const std::string& key, const auto& defaultValue) {
+  auto getActiveValue = [&jsonObj](std::string_view key, const auto& defaultValue) {
     using ValueType = std::remove_cv_t<std::remove_reference_t<decltype(defaultValue)>>;
 
     if (!jsonObj.contains(key)) {
@@ -22,13 +22,13 @@ Station Station::fromJson(const json& jsonObj) {
     }
 
     // If an array, find the active index
-    if (!jsonObj.contains("status") || !jsonObj["status"].is_array()) {
+    const auto& statuses = jsonObj.value("status", json::array());
+    if (!statuses.is_array() || statuses.empty()) {
       return field[0].get<ValueType>();
     }
 
-    const auto& statuses = jsonObj["status"];
     for (size_t i = 0; i < statuses.size(); ++i) {
-      std::string status = statuses[i].get<std::string>();
+      const auto& status = statuses[i].get_ref<const std::string&>();
       if (status.find("statusActive") != std::string::npos) {
         return field[i].get<ValueType>();
       }
@@ -49,12 +49,6 @@ Station Station::fromJson(const json& jsonObj) {
   station.notation = jsonObj.value("notation", "unknown");
   station.town = jsonObj.value("town", "unknown");
   station.riverName = jsonObj.value("riverName", "unknown");
-
-  if (jsonObj.contains("measures") && jsonObj["measures"].is_array()) {
-    for (const auto& measureJson : jsonObj["measures"]) {
-      station.measures.push_back(Measure::fromJson(measureJson));
-    }
-  }
 
   return station;
 }
