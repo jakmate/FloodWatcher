@@ -38,9 +38,6 @@ class FloodWarning {
     const std::string& getMessage() const {
       return message;
     }
-    const std::string& getRegion() const {
-      return region;
-    }
     const std::string& getCounty() const {
       return county;
     }
@@ -65,7 +62,6 @@ class FloodWarning {
     std::string timeRaised;
     std::string timeSeverityChanged;
     std::string message;
-    std::string region;
     std::string county;
     std::string polygonUrl;
     std::optional<MultiPolygon> floodAreaPolygon;

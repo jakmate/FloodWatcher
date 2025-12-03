@@ -17,12 +17,8 @@ FloodWarning FloodWarning::fromJson(const json& jsonObj) {
 
   if (jsonObj.contains("floodArea") && jsonObj["floodArea"].is_object()) {
     const auto& floodArea = jsonObj["floodArea"];
-    warning.region = floodArea.value("region", "unknown");
     warning.county = floodArea.value("county", "unknown");
-
-    if (floodArea.contains("polygon")) {
-      warning.polygonUrl = floodArea.value("polygon", "");
-    }
+    warning.polygonUrl = floodArea.value("polygon", "");
   }
 
   return warning;

@@ -28,12 +28,12 @@ jobs:
 
       - name: Run clang-format check
         run: |
-          find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+          find include src tests/cpp/unit -type f \( -name '*.cpp' -o -name '*.hpp' \) \
             -exec clang-format --dry-run --Werror --style=file {} +
 
       - name: Run clang-tidy
         run: |
-          find include src -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+          find include src tests/cpp/unit -type f \( -name '*.cpp' -o -name '*.hpp' \) \
             -print0 | xargs -0 -P $(nproc) -I {} clang-tidy -p build {}
 
       - name: Finish

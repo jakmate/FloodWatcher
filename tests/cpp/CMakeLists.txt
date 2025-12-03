@@ -50,10 +50,12 @@ target_link_libraries(flood_monitor_core
 # Create test executables
 add_executable(unit_tests
     #unit/FloodMonitoringDataTest.cpp
-    unit/HttpClientTest.cpp
-    #unit/StationTest.cpp
-    #unit/MeasureTest.cpp
-    #unit/FloodWarningTest.cpp
+    #unit/HttpClientTest.cpp
+    unit/StationTest.cpp
+    unit/MeasureTest.cpp
+    unit/FloodWarningTest.cpp
+    #unit/FloodWarningModelTest.cpp
+    #unit/StationModelTest.cpp
 )
 
 target_link_libraries(unit_tests
