@@ -42,12 +42,12 @@ void FloodMonitoringData::fetchAllPolygonsAsync() {
             warning.setFloodAreaPolygon(
                 FloodWarning::parseGeoJsonPolygon(polygonJson["features"][0]["geometry"]));
           } catch (const std::exception& e) {
-            std::lock_guard<std::mutex> lock(coutMutex);
+            std::scoped_lock<std::mutex> lock(coutMutex);
             std::cerr << "Error parsing polygon from URL " << warning.getPolygonUrl() << ": "
                       << e.what() << '\n';
           }
         } else {
-          std::lock_guard<std::mutex> lock(coutMutex);
+          std::scoped_lock<std::mutex> lock(coutMutex);
           std::cerr << "Failed to fetch polygon from URL: " << warning.getPolygonUrl() << '\n';
         }
       }));

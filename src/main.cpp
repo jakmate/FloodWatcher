@@ -7,7 +7,7 @@
 #include <QQmlContext>
 #include <iostream>
 
-static inline long msSince(std::chrono::steady_clock::time_point t) {
+static inline auto msSince(std::chrono::steady_clock::time_point t) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t)
       .count();
 }

@@ -108,6 +108,7 @@ void FloodWarningModel::fetchWarnings() {
 void FloodWarningModel::updateWarnings(const std::vector<FloodWarning>& newWarnings) {
   beginResetModel();
   m_warnings = newWarnings;
+  m_warnings.shrink_to_fit();
 
   // Sort by severity level
   std::sort(m_warnings.begin(), m_warnings.end(), [](const FloodWarning& a, const FloodWarning& b) {
@@ -135,44 +136,25 @@ int FloodWarningModel::calculateNextUpdateMs() {
   }
 
   // Convert to milliseconds and subtract elapsed time in current minute
-  int delayMs = (minutesToNext * 60 - currentSecond) * 1000 - currentMs;
+  int delayMs = ((minutesToNext * 60 - currentSecond) * 1000) - currentMs;
 
   return delayMs;
 }
 
 QVariantList FloodWarningModel::getPolygonPath(const FloodWarning& warning) {
-  QVariantList paths;
-
   const auto& multiPolygon = warning.getFloodAreaPolygon();
-  if (!multiPolygon.has_value() || multiPolygon->empty()) {
-    return paths;
+  if (!multiPolygon.has_value() || multiPolygon->empty() || (*multiPolygon)[0].empty()) {
+    return {};
   }
 
-  // For each polygon in the multipolygon
-  for (const auto& polygon : *multiPolygon) {
-    if (polygon.empty()) {
-      continue;
-    }
+  const auto& exteriorRing = (*multiPolygon)[0][0];
+  QVariantList coordinates;
+  coordinates.reserve(static_cast<qsizetype>(exteriorRing.size()));
 
-    // Get the exterior ring
-    const auto& exteriorRing = polygon[0];
-
-    QVariantList coordinates;
-    for (const auto& coord : exteriorRing) {
-      // coord.first = longitude, coord.second = latitude
-      QGeoCoordinate geoCoord(coord.second, coord.first);
-      coordinates.append(QVariant::fromValue(geoCoord));
-    }
-
-    if (!coordinates.isEmpty()) {
-      paths.append(QVariant::fromValue(coordinates));
-    }
+  for (const auto& coord : exteriorRing) {
+    // coord.first = longitude, coord.second = latitude
+    coordinates.append(QVariant::fromValue(QGeoCoordinate(coord.second, coord.first)));
   }
 
-  // QML MapPolygon can only handle one path at a time
-  if (!paths.isEmpty()) {
-    return paths[0].toList();
-  }
-
-  return {};
+  return coordinates;
 }
