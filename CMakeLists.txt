@@ -72,7 +72,7 @@ if(ENABLE_PROFILING)
 endif()
 
 # Add test directories
-option(BUILD_TESTS "Build tests" ON)
+option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()

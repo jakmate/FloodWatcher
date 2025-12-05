@@ -39,7 +39,7 @@ cmake --build build
 ## Testing
 
 ```bash
-cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -B build
+cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DBUILD_TESTS=ON -B build
 cmake --build build --target unit_tests
 cmake --build build --target coverage
 ```
