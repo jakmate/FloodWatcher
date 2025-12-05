@@ -38,7 +38,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libcurl4-openssl-dev clang-format clang-tidy \
             cmake build-essential nlohmann-json3-dev ninja-build gcovr \
-            libgl1-mesa-dev libglu1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
+            libgl1-mesa-dev libglu1-mesa-dev libegl1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev \
 
       - name: Generate compile_commands.json
         run: |
