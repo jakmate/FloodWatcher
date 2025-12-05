@@ -100,11 +100,13 @@ if(ENABLE_COVERAGE)
         add_custom_target(coverage
             COMMAND ${CMAKE_COMMAND} -E remove_directory coverage
             COMMAND ${CMAKE_COMMAND} -E make_directory coverage
-            COMMAND ctest --output-on-failure
+            COMMAND ctest -j --output-on-failure
             COMMAND ${GCOVR}
+                -j
                 -r ${CMAKE_SOURCE_DIR}
                 --filter ${CMAKE_SOURCE_DIR}/src/
                 --filter ${CMAKE_SOURCE_DIR}/include/
+                --exclude-unreachable-branches
                 --html --html-details
                 --print-summary
                 -o coverage/index.html

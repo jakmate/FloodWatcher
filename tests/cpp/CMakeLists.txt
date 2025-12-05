@@ -6,7 +6,7 @@ include(FetchContent)
 FetchContent_Declare(
     googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.14.0
+    GIT_TAG v1.17.0
 )
 FetchContent_MakeAvailable(googletest)
 
@@ -49,8 +49,8 @@ target_link_libraries(flood_monitor_core
 
 # Create test executables
 add_executable(unit_tests
-    #unit/FloodMonitoringDataTest.cpp
-    #unit/HttpClientTest.cpp
+    unit/FloodMonitoringDataTest.cpp
+    unit/HttpClientTest.cpp
     unit/StationTest.cpp
     unit/MeasureTest.cpp
     unit/FloodWarningTest.cpp

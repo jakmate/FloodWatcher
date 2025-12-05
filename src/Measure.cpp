@@ -14,8 +14,6 @@ Measure Measure::fromJson(const json& jsonObj) {
     const auto& reading = jsonObj["latestReading"];
     if (reading.is_object() && reading.contains("value")) {
       measure.latestReading = reading["value"].get<double>();
-    } else if (reading.is_number()) {
-      measure.latestReading = reading.get<double>();
     }
   }
 

@@ -9,7 +9,7 @@ TEST(StationFromJsonTest, DefaultBehaviour) {
   json j = {{"RLOIid", "id"},     {"catchmentName", "name"}, {"dateOpened", "date"},
             {"label", "l"},       {"lat", 51.874767},        {"long", -1.740083},
             {"northing", 219610}, {"easting", 528000},       {"notation", "n"},
-            {"town", "t"},        {"riverName", "r"}};
+            {"town", "t"},        {"riverName", "r"},        {"status", "url/statusActive"}};
 
   Station m = Station::fromJson(j);
 
@@ -42,4 +42,41 @@ TEST(StationFromJsonTest, DefaultsWhenFieldsMissing) {
   EXPECT_EQ(m.getNotation(), "unknown");
   EXPECT_EQ(m.getTown(), "unknown");
   EXPECT_EQ(m.getRiverName(), "unknown");
+}
+
+TEST(StationFromJsonTest, HandlesArrayFieldsWithActiveStatus) {
+  json j = {{"RLOIid", json::array({"10427", "9154"})},
+            {"catchmentName", json::array({"Loddon", "London"})},
+            {"label", json::array({"Erith Deep Wharf", "Erith Deep Wharf TL"})},
+            {"status", json::array({"url/statusActive", "url/statusSuspended"})},
+            {"notation", "0018"}};
+
+  Station s = Station::fromJson(j);
+
+  // Should pick first element (index 0) matching statusActive
+  EXPECT_EQ(s.getRLOIid(), "10427");
+  EXPECT_EQ(s.getCatchmentName(), "Loddon");
+  EXPECT_EQ(s.getLabel(), "Erith Deep Wharf");
+  EXPECT_EQ(s.getNotation(), "0018");
+}
+
+TEST(StationFromJsonTest, HandlesArrayFieldsWithoutStatus) {
+  json j = {{"RLOIid", json::array({"10427", "9154"})},
+            {"catchmentName", json::array({"Loddon", "London"})}};
+
+  Station s = Station::fromJson(j);
+
+  // Should fallback to first element when no status array
+  EXPECT_EQ(s.getRLOIid(), "10427");
+  EXPECT_EQ(s.getCatchmentName(), "Loddon");
+}
+
+TEST(StationFromJsonTest, HandlesArrayFieldsWithNoActiveStatus) {
+  json j = {{"RLOIid", json::array({"10427", "9154"})},
+            {"status", json::array({"url/statusSuspended", "url/statusInactive"})}};
+
+  Station s = Station::fromJson(j);
+
+  // Should fallback to first element when no statusActive found
+  EXPECT_EQ(s.getRLOIid(), "10427");
 }

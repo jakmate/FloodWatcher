@@ -40,23 +40,17 @@ TEST(MeasureFromJsonTest, DefaultsWhenFieldsMissing) {
 }
 
 TEST(MeasureFromJsonTest, LatestReadingObjectWithoutValueLeavesDefault) {
-  json j;
-  j["@id"] = "m3";
-  // latestReading present but doesn't contain "value"
-  j["latestReading"] = json::object({{"timestamp", "2025-01-01T00:00:00Z"}});
+  json j = {{"@id", "m3"},
+            {"latestReading", json::object({{"timestamp", "2025-01-01T00:00:00Z"}})}};
 
   Measure m = Measure::fromJson(j);
 
   EXPECT_EQ(m.getId(), "m3");
-  // since there's no "value" and it's not a numeric reading, latestReading should be
-  // unchanged/default
-  EXPECT_DOUBLE_EQ(m.getLatestReading(), 0.0);
+  EXPECT_DOUBLE_EQ(m.getLatestReading(), 0.0); // should remain default
 }
 
 TEST(MeasureFromJsonExtra, LatestReadingNullKeepsDefault) {
-  json j;
-  j["@id"] = "null";
-  j["latestReading"] = nullptr; // JSON null
+  json j = {{"@id", "null"}, {"latestReading", nullptr}};
 
   EXPECT_NO_THROW({
     Measure m = Measure::fromJson(j);
@@ -65,12 +59,8 @@ TEST(MeasureFromJsonExtra, LatestReadingNullKeepsDefault) {
   });
 }
 
-// Exercise the branch where latestReading is an object with "value" present
-// but the value is not numeric. get<double>() will throw a nlohmann::json::type_error.
 TEST(MeasureFromJsonExtra, LatestReadingObjectWithNonNumericValueThrows) {
-  json j;
-  j["@id"] = "badvalue";
-  j["latestReading"] = json::object({{"value", "not-a-number"}});
+  json j = {{"@id", "badvalue"}, {"latestReading", json::object({{"value", "not-a-number"}})}};
 
   // fromJson calls get<double>() here and will throw.
   EXPECT_THROW({ Measure::fromJson(j); }, nlohmann::json::type_error);

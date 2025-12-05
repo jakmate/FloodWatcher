@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
     // Fetch data
     FloodMonitoringData monitoringData;
 
+    // Stations
     auto t1 = std::chrono::steady_clock::now();
     auto response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/"
                                          "id/stations?status=Active");
@@ -46,8 +47,9 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "parse stations: " << msSince(t2) << " ms\n";
 
-    // Create model
     StationModel model(monitoringData.getStations());
+
+    // Flood Warnings
     auto t3 = std::chrono::steady_clock::now();
     response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
     std::cout << "fetch warnings: " << msSince(t3) << " ms\n";
@@ -71,6 +73,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "parse warnings: " << msSince(t4) << " ms\n";
 
+    // Polygons
     auto t5 = std::chrono::steady_clock::now();
     monitoringData.fetchAllPolygonsAsync();
     std::cout << "fetch all polygons async: " << msSince(t5) << " ms\n";
