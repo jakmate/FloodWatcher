@@ -1,5 +1,5 @@
 # Minimum CMake version for gtest_discover_tests
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 # Fetch Google Test
 include(FetchContent)

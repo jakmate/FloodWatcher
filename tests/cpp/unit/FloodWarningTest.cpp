@@ -96,12 +96,24 @@ TEST(FloodWarningParseGeoJsonPolygonTest, MultiPolygonType) {
   EXPECT_EQ(multiPolygon[1].size(), 1); // One ring in second polygon
 }
 
+TEST(FloodWarningParseGeoJsonPolygonTest, UnknownType) {
+  json geoJson = {{"type", "Point"}, {"coordinates", json::array()}};
+  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  EXPECT_EQ(result.size(), 0);
+}
+
 TEST(FloodWarningParseGeoJsonPolygonTest, NoCoordinates) {
-  json geoJson = {{"type", "MultiPolygon"}};
+  json geoJson = {{"type", "Polygon"}};
 
   auto multiPolygon = FloodWarning::parseGeoJsonPolygon(geoJson);
 
   EXPECT_EQ(multiPolygon.size(), 0);
+}
+
+TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesArrayEmpty) {
+  json geoJson = {{"type", "Polygon"}, {"coordinates", json::array()}};
+  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  EXPECT_EQ(result.size(), 0);
 }
 
 TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
@@ -110,4 +122,33 @@ TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
   auto multiPolygon = FloodWarning::parseGeoJsonPolygon(geoJson);
 
   EXPECT_EQ(multiPolygon.size(), 0);
+}
+
+TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesInvalid) {
+  json geoJson = {
+      {"type", "Polygon"},
+      {"coordinates", json::array({json::array({
+          json::array({0.0, 1.0}),     // valid
+          "not an array",               // invalid
+          json::array({2.0}),          // invalid (< 2 elements)
+          nullptr 
+      })})}
+  };
+  
+  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  EXPECT_EQ(result[0][0].size(), 1);  // Only 2 valid coords
+}
+
+TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesAllInvalid) {
+  json geoJson = {
+      {"type", "Polygon"},
+      {"coordinates", json::array({json::array({
+          "invalid", 
+          json::array({1.0}),
+          nullptr 
+      })})}
+  };
+  
+  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  EXPECT_EQ(result.size(), 0);  // Empty polygon filtered out
 }

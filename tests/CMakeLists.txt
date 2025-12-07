@@ -1,5 +1,5 @@
 # tests/CMakeLists.txt
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.15)
 
 # Add C++ tests
 add_subdirectory(cpp)

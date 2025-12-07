@@ -47,7 +47,12 @@ TEST(StationFromJsonTest, DefaultsWhenFieldsMissing) {
 TEST(StationFromJsonTest, HandlesArrayFieldsWithActiveStatus) {
   json j = {{"RLOIid", json::array({"10427", "9154"})},
             {"catchmentName", json::array({"Loddon", "London"})},
+            {"dateOpened", json::array({"date", "date2"})},
             {"label", json::array({"Erith Deep Wharf", "Erith Deep Wharf TL"})},
+            {"lat", json::array({51.5, 52.5})},
+            {"long", json::array({-1.5, -2.5})},
+            {"northing", json::array({100000, 200000})},
+            {"easting", json::array({300000, 400000})},
             {"status", json::array({"url/statusActive", "url/statusSuspended"})},
             {"notation", "0018"}};
 
@@ -56,7 +61,12 @@ TEST(StationFromJsonTest, HandlesArrayFieldsWithActiveStatus) {
   // Should pick first element (index 0) matching statusActive
   EXPECT_EQ(s.getRLOIid(), "10427");
   EXPECT_EQ(s.getCatchmentName(), "Loddon");
+  EXPECT_EQ(s.getDateOpened(), "date");
   EXPECT_EQ(s.getLabel(), "Erith Deep Wharf");
+  EXPECT_EQ(s.getLat(), 51.5);
+  EXPECT_EQ(s.getLon(), -1.5);
+  EXPECT_EQ(s.getNorthing(), 100000);
+  EXPECT_EQ(s.getEasting(), 300000);
   EXPECT_EQ(s.getNotation(), "0018");
 }
 
@@ -79,4 +89,13 @@ TEST(StationFromJsonTest, HandlesArrayFieldsWithNoActiveStatus) {
 
   // Should fallback to first element when no statusActive found
   EXPECT_EQ(s.getRLOIid(), "10427");
+}
+
+TEST(StationFromJsonTest, HandlesStatusNotArray) {
+  json j = {{"RLOIid", json::array({"10427", "9154"})},
+            {"status", "url/statusActive"}};
+
+  Station s = Station::fromJson(j);
+
+  EXPECT_EQ(s.getRLOIid(), "10427");  // Fallback to first
 }
