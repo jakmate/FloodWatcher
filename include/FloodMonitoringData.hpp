@@ -1,5 +1,7 @@
 #pragma once
 #include "FloodWarning.hpp"
+#include "HttpClientAdapter.hpp"
+#include "IHttpClient.hpp"
 #include "Station.hpp"
 #include <nlohmann/json.hpp>
 #include <vector>
@@ -7,7 +9,11 @@
 using json = nlohmann::json;
 
 class FloodMonitoringData {
+    friend class FloodMonitoringDataTest;
+
   public:
+    explicit FloodMonitoringData(IHttpClient* client = &defaultClient);
+
     void parseFloodWarnings(const json& apiResponse);
     void parseStations(const json& apiResponse);
     void fetchAllPolygonsAsync();
@@ -22,4 +28,6 @@ class FloodMonitoringData {
   private:
     std::vector<FloodWarning> floodWarnings;
     std::vector<Station> stations;
+    IHttpClient* httpClient;
+    static HttpClientAdapter defaultClient;
 };

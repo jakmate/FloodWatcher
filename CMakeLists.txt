@@ -34,6 +34,8 @@ set(HEADERS
     include/StationModel.hpp
     include/Measure.hpp
     include/HttpClient.hpp
+    include/IHttpClient.hpp
+    include/HttpClientAdapter.hpp
     include/GeometryTypes.hpp
 )
 

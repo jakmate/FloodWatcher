@@ -4,6 +4,10 @@
 #include <iostream>
 #include <vector>
 
+HttpClientAdapter FloodMonitoringData::defaultClient{};
+
+FloodMonitoringData::FloodMonitoringData(IHttpClient* client) : httpClient(client) {}
+
 void FloodMonitoringData::parseFloodWarnings(const json& apiResponse) {
   if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
     for (const auto& item : apiResponse["items"]) {
@@ -34,8 +38,8 @@ void FloodMonitoringData::fetchAllPolygonsAsync() {
 
   for (auto& warning : floodWarnings) {
     if (!warning.getPolygonUrl().empty()) {
-      futures.push_back(std::async(std::launch::async, [&warning, &coutMutex]() {
-        auto polygonData = HttpClient::fetchUrl(warning.getPolygonUrl());
+      futures.push_back(std::async(std::launch::async, [this, &warning, &coutMutex]() {
+        auto polygonData = httpClient->fetchUrl(warning.getPolygonUrl());
         if (polygonData) {
           try {
             json polygonJson = json::parse(*polygonData);

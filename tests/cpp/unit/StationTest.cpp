@@ -92,10 +92,9 @@ TEST(StationFromJsonTest, HandlesArrayFieldsWithNoActiveStatus) {
 }
 
 TEST(StationFromJsonTest, HandlesStatusNotArray) {
-  json j = {{"RLOIid", json::array({"10427", "9154"})},
-            {"status", "url/statusActive"}};
+  json j = {{"RLOIid", json::array({"10427", "9154"})}, {"status", "url/statusActive"}};
 
   Station s = Station::fromJson(j);
 
-  EXPECT_EQ(s.getRLOIid(), "10427");  // Fallback to first
+  EXPECT_EQ(s.getRLOIid(), "10427"); // Fallback to first
 }

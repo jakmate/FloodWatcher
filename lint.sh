@@ -9,9 +9,9 @@ echo "Running qmlformat..."
 qmlformat-qt6 -i qml/main.qml qml/MapArea.qml qml/StationPanel.qml qml/WarningsPanel.qml
 
 echo "Running clang-format..."
-clang-format -i src/*.cpp include/*.hpp tests/cpp/unit/*.cpp
+clang-format -i src/*.cpp include/*.hpp tests/cpp/unit/*.cpp tests/cpp/mocks/*.hpp
 
 echo "Running clang-tidy..."
-run-clang-tidy -p build -j $(nproc) 'src/.*\.cpp|include/.*\.hpp|tests/cpp/unit/.*\.cpp'
+run-clang-tidy -p build -j $(nproc) 'src/.*\.cpp|include/.*\.hpp|tests/cpp/unit/.*\.cpp|tests/cpp/mocks/.*\.hpp'
 
 echo "All checks complete!"

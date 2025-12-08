@@ -127,28 +127,20 @@ TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
 TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesInvalid) {
   json geoJson = {
       {"type", "Polygon"},
-      {"coordinates", json::array({json::array({
-          json::array({0.0, 1.0}),     // valid
-          "not an array",               // invalid
-          json::array({2.0}),          // invalid (< 2 elements)
-          nullptr 
-      })})}
-  };
-  
+      {"coordinates", json::array({json::array({json::array({0.0, 1.0}), // valid
+                                                "not an array",          // invalid
+                                                json::array({2.0}),      // invalid (< 2 elements)
+                                                nullptr})})}};
+
   auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
-  EXPECT_EQ(result[0][0].size(), 1);  // Only 2 valid coords
+  EXPECT_EQ(result[0][0].size(), 1); // Only 1 valid coords
 }
 
 TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesAllInvalid) {
   json geoJson = {
       {"type", "Polygon"},
-      {"coordinates", json::array({json::array({
-          "invalid", 
-          json::array({1.0}),
-          nullptr 
-      })})}
-  };
-  
+      {"coordinates", json::array({json::array({"invalid", json::array({1.0}), nullptr})})}};
+
   auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
-  EXPECT_EQ(result.size(), 0);  // Empty polygon filtered out
+  EXPECT_EQ(result.size(), 0); // Empty polygon filtered out
 }
