@@ -27,7 +27,7 @@ jobs:
 
       - name: Install Qt 6.10.0
         run: |
-          aqt install-qt linux desktop 6.10.0 linux_gcc_64 -m qtlocation qtpositioning
+          aqt install-qt linux desktop 6.10.0 linux_gcc_64 --modules qtlocation qtpositioning --archives icu qtbase qtdeclarative
 
       - name: Set Qt environment
         run: |
@@ -79,7 +79,7 @@ jobs:
 
       - name: Install Qt 6.10.0
         run: |
-          aqt install-qt linux desktop 6.10.0 linux_gcc_64 -m qtlocation qtpositioning
+          aqt install-qt linux desktop 6.10.0 linux_gcc_64 --modules qtlocation qtpositioning --archives icu qtbase qtdeclarative
 
       - name: Add Qt tools to PATH
         run: |
