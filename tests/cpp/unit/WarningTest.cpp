@@ -1,11 +1,11 @@
-// tests/unit/FloodWarningTest.cpp
-#include "FloodWarning.hpp"
+// tests/unit/WarningTest.cpp
+#include "Warning.hpp"
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
 using nlohmann::json;
 
-TEST(FloodWarningFromJsonTest, DefaultBehaviour) {
+TEST(WarningFromJsonTest, DefaultBehaviour) {
   json j = {{"floodAreaID", "m1"},
             {"description", "long description"},
             {"eaAreaName", "a"},
@@ -17,7 +17,7 @@ TEST(FloodWarningFromJsonTest, DefaultBehaviour) {
             {"message", "very long message!"},
             {"floodArea", json::object({{"county", "c"}, {"polygon", "m2"}})}};
 
-  FloodWarning fw = FloodWarning::fromJson(j);
+  Warning fw = Warning::fromJson(j);
 
   EXPECT_EQ(fw.getId(), "m1");
   EXPECT_EQ(fw.getDescription(), "long description");
@@ -32,10 +32,10 @@ TEST(FloodWarningFromJsonTest, DefaultBehaviour) {
   EXPECT_EQ(fw.getPolygonUrl(), "m2");
 }
 
-TEST(FloodWarningFromJsonTest, DefaultsWhenFieldsMissing) {
+TEST(WarningFromJsonTest, DefaultsWhenFieldsMissing) {
   json j = json::object(); // empty
 
-  FloodWarning fw = FloodWarning::fromJson(j);
+  Warning fw = Warning::fromJson(j);
 
   EXPECT_EQ(fw.getId(), "unknown");
   EXPECT_EQ(fw.getDescription(), "unknown");
@@ -50,10 +50,10 @@ TEST(FloodWarningFromJsonTest, DefaultsWhenFieldsMissing) {
   EXPECT_EQ(fw.getPolygonUrl(), "");
 }
 
-TEST(FloodWarningFromJsonTest, FloodAreaNotAnObject) {
+TEST(WarningFromJsonTest, FloodAreaNotAnObject) {
   json j = {{"floodAreaID", "m1"}, {"description", "long description"}, {"floodArea", nullptr}};
 
-  FloodWarning fw = FloodWarning::fromJson(j);
+  Warning fw = Warning::fromJson(j);
 
   EXPECT_EQ(fw.getId(), "m1");
   EXPECT_EQ(fw.getDescription(), "long description");
@@ -61,7 +61,7 @@ TEST(FloodWarningFromJsonTest, FloodAreaNotAnObject) {
   EXPECT_EQ(fw.getPolygonUrl(), "");
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, PolygonType) {
+TEST(WarningParseGeoJsonPolygonTest, PolygonType) {
   json geoJson = {
       {"type", "Polygon"},
       {"coordinates", json::array({json::array({// Single ring
@@ -69,14 +69,14 @@ TEST(FloodWarningParseGeoJsonPolygonTest, PolygonType) {
                                                 json::array({1.0, 1.0}), json::array({0.0, 1.0}),
                                                 json::array({0.0, 0.0})})})}};
 
-  auto multiPolygon = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
   EXPECT_EQ(multiPolygon.size(), 1);       // One polygon
   EXPECT_EQ(multiPolygon[0].size(), 1);    // One ring in the polygon
   EXPECT_EQ(multiPolygon[0][0].size(), 5); // Five points in the ring
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, MultiPolygonType) {
+TEST(WarningParseGeoJsonPolygonTest, MultiPolygonType) {
   json geoJson = {
       {"type", "MultiPolygon"},
       {"coordinates",
@@ -89,42 +89,42 @@ TEST(FloodWarningParseGeoJsonPolygonTest, MultiPolygonType) {
                                               json::array({11.0, 11.0}), json::array({10.0, 11.0}),
                                               json::array({10.0, 10.0})})})})}};
 
-  auto multiPolygon = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
   EXPECT_EQ(multiPolygon.size(), 2);    // Two polygons
   EXPECT_EQ(multiPolygon[0].size(), 1); // One ring in first polygon
   EXPECT_EQ(multiPolygon[1].size(), 1); // One ring in second polygon
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, UnknownType) {
+TEST(WarningParseGeoJsonPolygonTest, UnknownType) {
   json geoJson = {{"type", "Point"}, {"coordinates", json::array()}};
-  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto result = Warning::parseGeoJsonPolygon(geoJson);
   EXPECT_EQ(result.size(), 0);
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, NoCoordinates) {
+TEST(WarningParseGeoJsonPolygonTest, NoCoordinates) {
   json geoJson = {{"type", "Polygon"}};
 
-  auto multiPolygon = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
   EXPECT_EQ(multiPolygon.size(), 0);
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesArrayEmpty) {
+TEST(WarningParseGeoJsonPolygonTest, CoordinatesArrayEmpty) {
   json geoJson = {{"type", "Polygon"}, {"coordinates", json::array()}};
-  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto result = Warning::parseGeoJsonPolygon(geoJson);
   EXPECT_EQ(result.size(), 0);
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
+TEST(WarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
   json geoJson = {{"type", "MultiPolygon"}, {"coordinates", 69}};
 
-  auto multiPolygon = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
   EXPECT_EQ(multiPolygon.size(), 0);
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesInvalid) {
+TEST(WarningParseGeoJsonPolygonTest, CoordinatesInvalid) {
   json geoJson = {
       {"type", "Polygon"},
       {"coordinates", json::array({json::array({json::array({0.0, 1.0}), // valid
@@ -132,15 +132,15 @@ TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesInvalid) {
                                                 json::array({2.0}),      // invalid (< 2 elements)
                                                 nullptr})})}};
 
-  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto result = Warning::parseGeoJsonPolygon(geoJson);
   EXPECT_EQ(result[0][0].size(), 1); // Only 1 valid coords
 }
 
-TEST(FloodWarningParseGeoJsonPolygonTest, CoordinatesAllInvalid) {
+TEST(WarningParseGeoJsonPolygonTest, CoordinatesAllInvalid) {
   json geoJson = {
       {"type", "Polygon"},
       {"coordinates", json::array({json::array({"invalid", json::array({1.0}), nullptr})})}};
 
-  auto result = FloodWarning::parseGeoJsonPolygon(geoJson);
+  auto result = Warning::parseGeoJsonPolygon(geoJson);
   EXPECT_EQ(result.size(), 0); // Empty polygon filtered out
 }

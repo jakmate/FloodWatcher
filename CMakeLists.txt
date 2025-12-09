@@ -11,14 +11,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # Find required packages
 find_package(CURL REQUIRED)
 find_package(nlohmann_json REQUIRED)
-find_package(Qt6 REQUIRED COMPONENTS Gui Qml Positioning)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Positioning)
 
 # Source files
 set(SOURCES
     src/main.cpp
-    src/FloodMonitoringData.cpp
-    src/FloodWarning.cpp
-    src/FloodWarningModel.cpp
+    src/MonitoringData.cpp
+    src/Warning.cpp
+    src/WarningModel.cpp
     src/Station.cpp
     src/StationModel.cpp
     src/Measure.cpp
@@ -27,9 +27,9 @@ set(SOURCES
 
 # Header files
 set(HEADERS
-    include/FloodMonitoringData.hpp
-    include/FloodWarning.hpp
-    include/FloodWarningModel.hpp
+    include/MonitoringData.hpp
+    include/Warning.hpp
+    include/WarningModel.hpp
     include/Station.hpp
     include/StationModel.hpp
     include/Measure.hpp
@@ -76,6 +76,7 @@ endif()
 # Add test directories
 option(BUILD_TESTS "Build tests" OFF)
 if(BUILD_TESTS)
+    message(STATUS "Building with tests")
     add_subdirectory(tests)
 endif()
 
@@ -84,6 +85,7 @@ target_link_libraries(flood_monitor
     PRIVATE
         CURL::libcurl
         nlohmann_json::nlohmann_json
+        Qt6::Core
         Qt6::Gui
         Qt6::Qml
         Qt6::Positioning

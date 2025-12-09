@@ -1,10 +1,10 @@
-#include "FloodWarning.hpp"
+#include "Warning.hpp"
 #include "HttpClient.hpp"
 #include <curl/curl.h>
 #include <iostream>
 
-FloodWarning FloodWarning::fromJson(const json& jsonObj) {
-  FloodWarning warning;
+Warning Warning::fromJson(const json& jsonObj) {
+  Warning warning;
   warning.id = jsonObj.value("floodAreaID", "unknown");
   warning.description = jsonObj.value("description", "unknown");
   warning.areaName = jsonObj.value("eaAreaName", "unknown");
@@ -24,7 +24,7 @@ FloodWarning FloodWarning::fromJson(const json& jsonObj) {
   return warning;
 }
 
-LinearRing FloodWarning::parseLinearRing(const json& ringJson) {
+LinearRing Warning::parseLinearRing(const json& ringJson) {
   LinearRing ring;
   ring.reserve(ringJson.size());
   for (const auto& coord : ringJson) {
@@ -35,7 +35,7 @@ LinearRing FloodWarning::parseLinearRing(const json& ringJson) {
   return ring;
 }
 
-MyPolygon FloodWarning::parsePolygon(const json& polygonJson) {
+MyPolygon Warning::parsePolygon(const json& polygonJson) {
   MyPolygon polygon;
   polygon.reserve(polygonJson.size());
   for (const auto& ringJson : polygonJson) {
@@ -47,7 +47,7 @@ MyPolygon FloodWarning::parsePolygon(const json& polygonJson) {
   return polygon;
 }
 
-MultiPolygon FloodWarning::parseGeoJsonPolygon(const json& geoJson) {
+MultiPolygon Warning::parseGeoJsonPolygon(const json& geoJson) {
   MultiPolygon result;
 
   if (!geoJson.contains("coordinates") || !geoJson["coordinates"].is_array()) {

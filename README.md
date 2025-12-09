@@ -14,10 +14,9 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 ## To Do
 
 - Load warnings in bg on launch?
-- Fix builds (Decide if qt5 and qt6 especially for linux since ubuntu-latest is missing qt location)
-- Add test coverage for qml?
-- Add cpp tests
+- Fix builds
 - Improve profiling (hard to read)
+- gtest vs Qt Test (or keep both use depending on file)
 
 ## Requirements
 
@@ -25,7 +24,7 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 - CMake 3.15+
 - libcurl
 - nlohmann/json
-- Qt 6 (with Qml, Gui, and Positioning modules)
+- Qt 6 (with Core,CQml, Gui, and Positioning modules)
 
 ## Building
 

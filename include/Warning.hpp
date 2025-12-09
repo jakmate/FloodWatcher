@@ -6,9 +6,9 @@
 
 using json = nlohmann::json;
 
-class FloodWarning {
+class Warning {
   public:
-    static FloodWarning fromJson(const json& jsonObj);
+    static Warning fromJson(const json& jsonObj);
     static MultiPolygon parseGeoJsonPolygon(const json& geoJson);
 
     const std::string& getId() const {

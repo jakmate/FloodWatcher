@@ -7,7 +7,7 @@ Item {
     id: root
 
     property var stationModel: null
-    property var floodWarningModel: null
+    property var warningModel: null
     property var selectedStation: null
     readonly property real minLat: 53.5
     readonly property real maxLat: 58
@@ -75,8 +75,8 @@ Item {
 
         // Flood warning polygons
         MapItemView {
-            id: floodWarningView
-            model: root.floodWarningModel
+            id: warningView
+            model: root.warningModel
 
             delegate: MapPolygon {
                 id: polygonDelegate

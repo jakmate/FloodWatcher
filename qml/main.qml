@@ -8,7 +8,7 @@ Window {
 
     property var selectedStation: null
     required property var stationModel
-    required property var floodWarningModel
+    required property var warningModel
 
     // Helper function to calculate centroid of a polygon
     function calculateCentroid(polygonPath) {
@@ -96,7 +96,7 @@ Window {
             height: parent.height
             selectedStation: root.selectedStation
             stationModel: root.stationModel
-            floodWarningModel: root.floodWarningModel
+            warningModel: root.warningModel
             onStationSelected: station => {
                 root.selectedStation = station;
             }
@@ -129,8 +129,8 @@ Window {
                 anchors.bottom: parent.bottom
                 anchors.left: parent.left
                 anchors.right: parent.right
-                floodWarningModel: root.floodWarningModel
-                onFloodWarningClicked: polygonPath => {
+                warningModel: root.warningModel
+                onWarningClicked: polygonPath => {
                     var centroid = root.calculateCentroid(polygonPath);
                     if (centroid) {
                         var zoom = root.calculateZoomForPolygon(polygonPath);

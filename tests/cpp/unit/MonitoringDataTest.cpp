@@ -1,57 +1,57 @@
-// tests/unit/FloodWarningDataTest.cpp
-#include "FloodMonitoringData.hpp"
+// tests/unit/MonitoringDataTest.cpp
+#include "MonitoringData.hpp"
 #include "MockHttpClient.hpp"
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
-TEST(ParseFloodWarningsTest, ParsesValidItemsArray) {
+TEST(ParseWarningsTest, ParsesValidItemsArray) {
   json apiResponse = {
       {"items", json::array({{{"severityLevel", 1}, {"message", "Flood alert"}},
                              {{"severityLevel", 2}, {"message", "Flood warning"}},
                              {{"severityLevel", 3}, {"message", "Severe flood warning"}}})}};
 
-  FloodMonitoringData data;
-  data.parseFloodWarnings(apiResponse);
+  MonitoringData data;
+  data.parseWarnings(apiResponse);
 
-  EXPECT_EQ(data.getFloodWarnings().size(), 3);
-  EXPECT_EQ(data.getFloodWarnings()[0].getMessage(), "Flood alert");
-  EXPECT_EQ(data.getFloodWarnings()[1].getSeverityLevel(), 2);
+  EXPECT_EQ(data.getWarnings().size(), 3);
+  EXPECT_EQ(data.getWarnings()[0].getMessage(), "Flood alert");
+  EXPECT_EQ(data.getWarnings()[1].getSeverityLevel(), 2);
 }
 
-TEST(ParseFloodWarningsTest, HandlesEmptyItems) {
+TEST(ParseWarningsTest, HandlesEmptyItems) {
   json apiResponse = {{"items", json::array()}};
 
-  FloodMonitoringData data;
-  data.parseFloodWarnings(apiResponse);
+  MonitoringData data;
+  data.parseWarnings(apiResponse);
 
-  EXPECT_TRUE(data.getFloodWarnings().empty());
+  EXPECT_TRUE(data.getWarnings().empty());
 }
 
-TEST(ParseFloodWarningsTest, HandlesMissingItemsKey) {
+TEST(ParseWarningsTest, HandlesMissingItemsKey) {
   json apiResponse = json::object();
 
-  FloodMonitoringData data;
-  data.parseFloodWarnings(apiResponse);
+  MonitoringData data;
+  data.parseWarnings(apiResponse);
 
-  EXPECT_TRUE(data.getFloodWarnings().empty());
+  EXPECT_TRUE(data.getWarnings().empty());
 }
 
-TEST(ParseFloodWarningsTest, CatchesInvalidJsonAndContinues) {
+TEST(ParseWarningsTest, CatchesInvalidJsonAndContinues) {
   json apiResponse = {
       {"items", json::array({{{"severityLevel", 1}, {"message", "Valid warning"}},
                              {{"severityLevel", "invalid"}}, // Wrong type
                              nullptr,                        // Null item
                              {{"severityLevel", 2}, {"message", "Another valid"}}})}};
 
-  FloodMonitoringData data;
+  MonitoringData data;
 
   // Should not throw - catches internally
-  EXPECT_NO_THROW(data.parseFloodWarnings(apiResponse));
+  EXPECT_NO_THROW(data.parseWarnings(apiResponse));
 
   // Should parse only valid items
-  EXPECT_EQ(data.getFloodWarnings().size(), 2);
+  EXPECT_EQ(data.getWarnings().size(), 2);
 }
 
 TEST(ParseStationsTest, ParsesValidItemsArray) {
@@ -65,7 +65,7 @@ TEST(ParseStationsTest, ParsesValidItemsArray) {
              {"lat", 53.5},
              {"long", -2.5}}})}};
 
-  FloodMonitoringData data;
+  MonitoringData data;
   data.parseStations(apiResponse);
 
   EXPECT_EQ(data.getStations().size(), 3);
@@ -76,7 +76,7 @@ TEST(ParseStationsTest, ParsesValidItemsArray) {
 TEST(ParseStationsTest, HandlesEmptyItems) {
   json apiResponse = {{"items", json::array()}};
 
-  FloodMonitoringData data;
+  MonitoringData data;
   data.parseStations(apiResponse);
 
   EXPECT_TRUE(data.getStations().empty());
@@ -85,7 +85,7 @@ TEST(ParseStationsTest, HandlesEmptyItems) {
 TEST(ParseStationsTest, HandlesMissingItemsKey) {
   json apiResponse = json::object();
 
-  FloodMonitoringData data;
+  MonitoringData data;
   data.parseStations(apiResponse);
 
   EXPECT_TRUE(data.getStations().empty());
@@ -100,7 +100,7 @@ TEST(ParseStationsTest, CatchesInvalidJsonAndContinues) {
             nullptr,                                                             // Null item
             {{"RLOIid", "another valid station"}, {"lat", 50.5}, {"long", -0.2}}})}};
 
-  FloodMonitoringData data;
+  MonitoringData data;
 
   // Should not throw - catches internally
   EXPECT_NO_THROW(data.parseStations(apiResponse));
@@ -109,13 +109,13 @@ TEST(ParseStationsTest, CatchesInvalidJsonAndContinues) {
   EXPECT_EQ(data.getStations().size(), 2);
 }
 
-class FloodMonitoringDataTest : public ::testing::Test {
+class MonitoringDataTest : public ::testing::Test {
   private:
     MockHttpClient mockClient;
-    FloodMonitoringData data{&mockClient};
+    MonitoringData data{&mockClient};
 
   protected:
-    FloodMonitoringData& getData() {
+    MonitoringData& getData() {
       return data;
     }
     MockHttpClient& getMockClient() {
@@ -147,10 +147,10 @@ class FloodMonitoringDataTest : public ::testing::Test {
             }
         })"_json;
 
-      auto warning1 = FloodWarning::fromJson(testWarning1);
-      auto warning2 = FloodWarning::fromJson(testWarning2);
+      auto warning1 = Warning::fromJson(testWarning1);
+      auto warning2 = Warning::fromJson(testWarning2);
 
-      data.floodWarnings = {warning1, warning2};
+      data.warnings = {warning1, warning2};
 
       // Setup mock responses
       mockClient.addResponse("http://test-polygon1.com", R"({
@@ -173,12 +173,12 @@ class FloodMonitoringDataTest : public ::testing::Test {
     }
 };
 
-TEST_F(FloodMonitoringDataTest, FetchAllPolygonsAsync_CompletesSuccessfully) {
+TEST_F(MonitoringDataTest, FetchAllPolygonsAsync_CompletesSuccessfully) {
   // Act
   getData().fetchAllPolygonsAsync();
 
   // Assert
-  const auto& warnings = getData().getFloodWarnings();
+  const auto& warnings = getData().getWarnings();
   ASSERT_EQ(warnings.size(), 2);
 
   // Verify first warning got its polygon
@@ -196,7 +196,7 @@ TEST_F(FloodMonitoringDataTest, FetchAllPolygonsAsync_CompletesSuccessfully) {
   EXPECT_EQ(poly2.size(), 1);
 }
 
-TEST_F(FloodMonitoringDataTest, FetchAllPolygonsAsync_HandlesFailedRequests) {
+TEST_F(MonitoringDataTest, FetchAllPolygonsAsync_HandlesFailedRequests) {
   // Setup one failing response
   getMockClient().addResponse("http://test-polygon1.com", "invalid json data");
   // polygon2 still works
@@ -205,7 +205,7 @@ TEST_F(FloodMonitoringDataTest, FetchAllPolygonsAsync_HandlesFailedRequests) {
   getData().fetchAllPolygonsAsync();
 
   // Assert
-  const auto& warnings = getData().getFloodWarnings();
+  const auto& warnings = getData().getWarnings();
 
   // First warning should fail to parse
   EXPECT_FALSE(warnings[0].getFloodAreaPolygon().has_value());

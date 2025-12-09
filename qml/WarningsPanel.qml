@@ -5,9 +5,9 @@ import QtQuick.Controls
 Rectangle {
     id: root
 
-    property var floodWarningModel: null
+    property var warningModel: null
 
-    signal floodWarningClicked(var polygonPath)
+    signal warningClicked(var polygonPath)
 
     NumberAnimation {
         id: scrollAnimation
@@ -63,7 +63,7 @@ Rectangle {
                 Repeater {
                     id: warningRepeater
 
-                    model: root.floodWarningModel
+                    model: root.warningModel
 
                     delegate: Rectangle {
                         id: warningItem
@@ -115,7 +115,7 @@ Rectangle {
                                 // Only trigger map navigation if we didn't click on the expand button
                                 if (!expandButtonMouseArea.containsMouse) {
                                     if (warningItem.model.polygonPath && warningItem.model.polygonPath.length > 0)
-                                        root.floodWarningClicked(warningItem.model.polygonPath);
+                                        root.warningClicked(warningItem.model.polygonPath);
                                 }
                             }
                         }

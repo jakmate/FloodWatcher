@@ -1,26 +1,26 @@
-#include "FloodMonitoringData.hpp"
+#include "MonitoringData.hpp"
 #include <HttpClient.hpp>
 #include <future>
 #include <iostream>
 #include <vector>
 
-HttpClientAdapter FloodMonitoringData::defaultClient{};
+HttpClientAdapter MonitoringData::defaultClient{};
 
-FloodMonitoringData::FloodMonitoringData(IHttpClient* client) : httpClient(client) {}
+MonitoringData::MonitoringData(IHttpClient* client) : httpClient(client) {}
 
-void FloodMonitoringData::parseFloodWarnings(const json& apiResponse) {
+void MonitoringData::parseWarnings(const json& apiResponse) {
   if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
     for (const auto& item : apiResponse["items"]) {
       try {
-        floodWarnings.push_back(FloodWarning::fromJson(item));
+        warnings.push_back(Warning::fromJson(item));
       } catch (const std::exception& e) {
-        std::cerr << "Error parsing flood warning: " << e.what() << '\n';
+        std::cerr << "Error parsing warning: " << e.what() << '\n';
       }
     }
   }
 }
 
-void FloodMonitoringData::parseStations(const json& apiResponse) {
+void MonitoringData::parseStations(const json& apiResponse) {
   if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
     for (const auto& item : apiResponse["items"]) {
       try {
@@ -32,11 +32,11 @@ void FloodMonitoringData::parseStations(const json& apiResponse) {
   }
 }
 
-void FloodMonitoringData::fetchAllPolygonsAsync() {
+void MonitoringData::fetchAllPolygonsAsync() {
   std::vector<std::future<void>> futures;
   std::mutex coutMutex; // For thread-safe logging
 
-  for (auto& warning : floodWarnings) {
+  for (auto& warning : warnings) {
     if (!warning.getPolygonUrl().empty()) {
       futures.push_back(std::async(std::launch::async, [this, &warning, &coutMutex]() {
         auto polygonData = httpClient->fetchUrl(warning.getPolygonUrl());
@@ -44,7 +44,7 @@ void FloodMonitoringData::fetchAllPolygonsAsync() {
           try {
             json polygonJson = json::parse(*polygonData);
             warning.setFloodAreaPolygon(
-                FloodWarning::parseGeoJsonPolygon(polygonJson["features"][0]["geometry"]));
+                Warning::parseGeoJsonPolygon(polygonJson["features"][0]["geometry"]));
           } catch (const std::exception& e) {
             std::scoped_lock<std::mutex> lock(coutMutex);
             std::cerr << "Error parsing polygon from URL " << warning.getPolygonUrl() << ": "
