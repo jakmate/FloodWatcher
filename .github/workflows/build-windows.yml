@@ -1,0 +1,59 @@
+name: Build Windows
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install aqtinstall
+        run: pip install aqtinstall
+
+      - name: Install Qt 6.10.0 (MinGW)
+        run: |
+          aqt install-qt windows desktop 6.10.0 win64_mingw --modules qtlocation qtpositioning --archives icu qtbase qtdeclarative
+          aqt install-tool windows desktop tools_mingw90
+
+      - name: Add MinGW to PATH
+        run: echo "${{ github.workspace }}\Tools\mingw900_64\bin" >> $env:GITHUB_PATH
+
+      - name: Install Ninja
+        run: choco install ninja
+
+      - name: Configure CMake (Ninja + MinGW)
+        run: |
+          cmake -B build -G "Ninja" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.10.0/mingw_64"
+
+      - name: Build (Ninja)
+        run: |
+          cmake --build build --config Release
+
+      - name: Run windeployqt
+        run: |
+          $qtpath = "${{ github.workspace }}\6.10.0\mingw_64"
+          $exe = (Get-ChildItem build -Recurse -Filter *.exe | Select-Object -First 1).FullName
+          & "$qtpath\bin\windeployqt.exe" --release --compiler-runtime $exe
+
+      - name: Create portable ZIP
+        run: |
+          powershell Compress-Archive -Path build\* -DestinationPath windows-portable.zip
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-portable
+          path: windows-portable.zip
