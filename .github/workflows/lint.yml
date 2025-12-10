@@ -46,7 +46,7 @@ jobs:
 
       - name: Build to generate moc files
         run: |
-          cmake --build build --target qttest_unit_tests
+          cmake --build build --target qttest_station_model qttest_warning_model
 
       - name: Run clang-format check
         run: |
@@ -55,8 +55,9 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          # Exclude WarningModelTest and StationModelTest for now due to linter picking up the .moc files
-          run-clang-tidy -p build -j $(nproc) 'src/.*\.cpp$|include/.*\.hpp$|tests/cpp/unit/(?!WarningModelTest|StationModelTest).*\.cpp$'
+          run-clang-tidy -p build -j $(nproc) \
+            -header-filter='^(?!.*(_autogen|\.moc)).*(include/.*\.hpp$)' \
+            '.*(src/.*\.cpp$|tests/cpp/mocks/.*\.hpp$|tests/cpp/unit/.*\.cpp$)'
 
       - name: Finish
         run: |

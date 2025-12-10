@@ -53,8 +53,7 @@ int main(int argc, char* argv[]) {
 
     // Warnings
     auto t4 = std::chrono::steady_clock::now();
-    response = HttpClient::fetchUrl(
-        "https://environment.data.gov.uk/flood-monitoring/id/floods?min-severity=2");
+    response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
     std::cout << "fetch warnings: " << msSince(t4) << " ms\n";
 
     if (!response) {

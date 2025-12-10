@@ -24,6 +24,7 @@ void StationModelTest::testRowCount() {
   QCOMPARE(model.rowCount(), 2);
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 void StationModelTest::testDataReturnsCorrectValues() {
   json s = R"({
     "label": "L1",
@@ -79,6 +80,7 @@ void StationModelTest::testDataReturnsCorrectValues() {
   QCOMPARE(m["unitName"].toString(), QString("m"));
   QCOMPARE(m["latestReading"].toDouble(), 3.14);
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 void StationModelTest::testDataReturnsEmptyForInvalidIndex() {
   StationModel model({});
@@ -87,6 +89,7 @@ void StationModelTest::testDataReturnsEmptyForInvalidIndex() {
   QVERIFY(!model.data(model.index(10, 0), Qt::UserRole).isValid());
 }
 
+// NOLINTBEGIN(readability-function-cognitive-complexity)
 void StationModelTest::testRoleNames() {
   StationModel model({});
   auto roles = model.roleNames();
@@ -102,6 +105,7 @@ void StationModelTest::testRoleNames() {
   QCOMPARE(roles[Qt::UserRole + 9], QByteArray("notation"));
   QCOMPARE(roles[Qt::UserRole + 10], QByteArray("measures"));
 }
+// NOLINTEND(readability-function-cognitive-complexity)
 
 QTEST_MAIN(StationModelTest)
 #include "StationModelTest.moc"
