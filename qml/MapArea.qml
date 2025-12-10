@@ -132,10 +132,9 @@ Item {
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            var station = root.stationModel.getStation(stationDelegate.index);
                             root.stationSelected({
                                 "index": stationDelegate.index,
-                                "data": station
+                                "model": stationDelegate.model
                             });
                         }
                     }

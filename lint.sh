@@ -12,6 +12,6 @@ echo "Running clang-format..."
 clang-format -i src/*.cpp include/*.hpp tests/cpp/unit/*.cpp tests/cpp/mocks/*.hpp
 
 echo "Running clang-tidy..."
-run-clang-tidy -p build -j $(nproc) 'src/.*\.cpp|include/.*\.hpp|tests/cpp/unit/.*\.cpp|tests/cpp/mocks/.*\.hpp'
+run-clang-tidy -p build -j $(nproc) 'src/.*\.cpp$|include/.*\.hpp$|tests/cpp/mocks/.*\.hpp$|tests/cpp/unit/(?!WarningModelTest|StationModelTest).*\.cpp$'
 
 echo "All checks complete!"

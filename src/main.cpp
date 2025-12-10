@@ -53,7 +53,8 @@ int main(int argc, char* argv[]) {
 
     // Warnings
     auto t4 = std::chrono::steady_clock::now();
-    response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
+    response = HttpClient::fetchUrl(
+        "https://environment.data.gov.uk/flood-monitoring/id/floods?min-severity=2");
     std::cout << "fetch warnings: " << msSince(t4) << " ms\n";
 
     if (!response) {
@@ -88,7 +89,7 @@ int main(int argc, char* argv[]) {
     auto t8 = std::chrono::steady_clock::now();
     QQmlApplicationEngine engine;
     engine.setInitialProperties({{"stationModel", QVariant::fromValue(&model)},
-                                 {"floodWarningModel", QVariant::fromValue(&warningModel)}});
+                                 {"warningModel", QVariant::fromValue(&warningModel)}});
     engine.load(QUrl(QStringLiteral("qrc:/qml/main.qml")));
     std::cout << "load qml: " << msSince(t8) << " ms\n";
 

@@ -50,13 +50,13 @@ jobs:
 
       - name: Run clang-format check
         run: |
-          find include src tests/cpp/unit -type f \( -name '*.cpp' -o -name '*.hpp' \) \
+          find include src tests/cpp/**/ -type f \( -name '*.cpp' -o -name '*.hpp' \) \
             -exec clang-format --dry-run --Werror --style=file {} +
 
       - name: Run clang-tidy
         run: |
-          # Exclude WarningModelTest for now
-          run-clang-tidy -p build -j $(nproc) 'src/.*\.(cpp|hpp)$|include/.*\.hpp$|tests/cpp/unit/(?!WarningModelTest).*\.cpp$'
+          # Exclude WarningModelTest and StationModelTest for now due to linter picking up the .moc files
+          run-clang-tidy -p build -j $(nproc) 'src/.*\.cpp$|include/.*\.hpp$|tests/cpp/unit/(?!WarningModelTest|StationModelTest).*\.cpp$'
 
       - name: Finish
         run: |

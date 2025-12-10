@@ -50,12 +50,14 @@ QVariant WarningModel::data(const QModelIndex& index, int role) const {
 }
 
 QHash<int, QByteArray> WarningModel::roleNames() const {
-  return {{static_cast<int>(WarningRoles::DESCRIPTION_ROLE), "description"},
-          {static_cast<int>(WarningRoles::SEVERITY_ROLE), "severity"},
-          {static_cast<int>(WarningRoles::SEVERITY_LEVEL_ROLE), "severityLevel"},
-          {static_cast<int>(WarningRoles::EA_AREA_NAME_ROLE), "eaAreaName"},
-          {static_cast<int>(WarningRoles::POLYGON_PATH_ROLE), "polygonPath"},
-          {static_cast<int>(WarningRoles::MESSAGE_ROLE), "message"}};
+  QHash<int, QByteArray> roles;
+  roles[static_cast<int>(WarningRoles::DESCRIPTION_ROLE)] = "description";
+  roles[static_cast<int>(WarningRoles::SEVERITY_ROLE)] = "severity";
+  roles[static_cast<int>(WarningRoles::SEVERITY_LEVEL_ROLE)] = "severityLevel";
+  roles[static_cast<int>(WarningRoles::EA_AREA_NAME_ROLE)] = "eaAreaName";
+  roles[static_cast<int>(WarningRoles::POLYGON_PATH_ROLE)] = "polygonPath";
+  roles[static_cast<int>(WarningRoles::MESSAGE_ROLE)] = "message";
+  return roles;
 }
 
 void WarningModel::startAutoUpdate() {

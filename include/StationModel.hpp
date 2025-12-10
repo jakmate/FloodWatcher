@@ -10,10 +10,16 @@ class StationModel : public QAbstractListModel {
 
   public:
     enum class StationRoles : uint16_t {
-      LATITUDE_ROLE = Qt::UserRole + 1,
+      LABEL_ROLE = Qt::UserRole + 1,
+      TOWN_ROLE,
+      LATITUDE_ROLE,
       LONGITUDE_ROLE,
-      LABEL_ROLE,
-      TOWN_ROLE
+      RLOI_ROLE,
+      CATCHMENT_ROLE,
+      DATE_ROLE,
+      RIVER_ROLE,
+      NOTATION_ROLE,
+      MEASURES_ROLE
     };
 
     explicit StationModel(const std::vector<Station>& stations, QObject* parent = nullptr);
@@ -22,8 +28,6 @@ class StationModel : public QAbstractListModel {
     QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
     QHash<int, QByteArray> roleNames() const override;
 
-    Q_INVOKABLE QVariantMap getStation(int index) const;
-    Q_INVOKABLE QVariantList getMeasures(int index) const;
     Q_INVOKABLE bool fetchMeasures(int index);
 
   private:

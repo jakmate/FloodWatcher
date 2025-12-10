@@ -6,7 +6,7 @@ Item {
 
     property var stationModel: null
     property var selectedStation: null
-    property var stationMeasures: []
+    readonly property var stationMeasures: selectedStation ? (selectedStation.model.measures || []) : []
 
     signal stationClosed
 
@@ -14,11 +14,7 @@ Item {
 
     onSelectedStationChanged: {
         if (selectedStation) {
-            // Fetch measures for the selected station
             root.stationModel.fetchMeasures(selectedStation.index);
-            root.stationMeasures = root.stationModel.getMeasures(selectedStation.index);
-        } else {
-            root.stationMeasures = [];
         }
     }
 
@@ -37,7 +33,7 @@ Item {
             spacing: 8
 
             Text {
-                text: root.selectedStation ? root.selectedStation.data.label : "No station selected"
+                text: root.selectedStation ? root.selectedStation.model.label : "No station selected"
                 color: "white"
                 font.pixelSize: 18
                 font.bold: true
@@ -73,7 +69,7 @@ Item {
         }
 
         Text {
-            text: root.selectedStation ? root.selectedStation.data.town : "Tap a marker on the map to see details."
+            text: root.selectedStation ? root.selectedStation.model.town : "Tap a marker on the map to see details."
             color: "#cccccc"
             font.pixelSize: 14
             wrapMode: Text.WordWrap
@@ -96,7 +92,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.data.RLOIid : ""
+                    text: root.selectedStation ? root.selectedStation.model.RLOIid : ""
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -112,7 +108,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.data.riverName : ""
+                    text: root.selectedStation ? root.selectedStation.model.riverName : ""
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -128,7 +124,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.data.catchmentName : ""
+                    text: root.selectedStation ? root.selectedStation.model.catchmentName : ""
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -144,7 +140,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.data.dateOpened : ""
+                    text: root.selectedStation ? root.selectedStation.model.dateOpened : ""
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -160,7 +156,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.data.latitude : ""
+                    text: root.selectedStation ? root.selectedStation.model.latitude : ""
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -176,7 +172,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.data.longitude : ""
+                    text: root.selectedStation ? root.selectedStation.model.longitude : ""
                     color: "white"
                     font.pixelSize: 13
                 }

@@ -31,7 +31,7 @@ add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/src/Measure.cpp
     ${CMAKE_SOURCE_DIR}/src/HttpClient.cpp
     ${CMAKE_SOURCE_DIR}/include/WarningModel.hpp
-    #${CMAKE_SOURCE_DIR}/include/StationModel.hpp
+    ${CMAKE_SOURCE_DIR}/include/StationModel.hpp
 )
 
 if(ENABLE_COVERAGE)
@@ -74,19 +74,19 @@ target_link_libraries(gtest_unit_tests
 # Register GoogleTest tests
 gtest_discover_tests(gtest_unit_tests)
 
-# Create test executables for QtTest
-add_executable(qttest_unit_tests
-    unit/WarningModelTest.cpp
-    #unit/StationModelTest.cpp
-)
+# Create test executables for QtTest and register them
+add_executable(qttest_warning_model unit/WarningModelTest.cpp)
+target_link_libraries(qttest_warning_model PRIVATE flood_monitor_core Qt6::Core Qt6::Positioning Qt6::Test)
+add_test(NAME qttest_warning_model COMMAND qttest_warning_model)
 
-target_link_libraries(qttest_unit_tests
-    PRIVATE
-        flood_monitor_core
-        Qt6::Core
-        Qt6::Positioning
-        Qt6::Test
-)
+add_executable(qttest_station_model unit/StationModelTest.cpp)
+target_link_libraries(qttest_station_model PRIVATE flood_monitor_core Qt6::Core Qt6::Test)
+add_test(NAME qttest_station_model COMMAND qttest_station_model)
 
-# Register QtTest tests
-add_test(NAME qttest_unit_tests COMMAND qttest_unit_tests)
+# Target for all unit tests
+add_custom_target(unit_tests
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    DEPENDS gtest_unit_tests qttest_warning_model qttest_station_model
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    COMMENT "Running all unit tests"
+)

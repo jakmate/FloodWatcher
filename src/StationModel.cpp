@@ -24,67 +24,55 @@ QVariant StationModel::data(const QModelIndex& index, int role) const {
   const Station& station = m_stations[index.row()];
 
   switch (static_cast<StationRoles>(role)) {
-    case StationRoles::LATITUDE_ROLE:
-      return station.getLat();
-    case StationRoles::LONGITUDE_ROLE:
-      return station.getLon();
     case StationRoles::LABEL_ROLE:
       return QString::fromStdString(station.getLabel());
     case StationRoles::TOWN_ROLE:
       return QString::fromStdString(station.getTown());
+    case StationRoles::LATITUDE_ROLE:
+      return station.getLat();
+    case StationRoles::LONGITUDE_ROLE:
+      return station.getLon();
+    case StationRoles::RLOI_ROLE:
+      return QString::fromStdString(station.getRLOIid());
+    case StationRoles::CATCHMENT_ROLE:
+      return QString::fromStdString(station.getCatchmentName());
+    case StationRoles::DATE_ROLE:
+      return QString::fromStdString(station.getDateOpened());
+    case StationRoles::RIVER_ROLE:
+      return QString::fromStdString(station.getRiverName());
+    case StationRoles::NOTATION_ROLE:
+      return QString::fromStdString(station.getNotation());
+    case StationRoles::MEASURES_ROLE: {
+      const auto& measures = station.getMeasures();
+      QVariantList result;
+      for (const auto& m : measures) {
+        QVariantMap map;
+        map["parameter"] = QString::fromStdString(m.getParameter());
+        map["parameterName"] = QString::fromStdString(m.getParameterName());
+        map["qualifier"] = QString::fromStdString(m.getQualifier());
+        map["latestReading"] = m.getLatestReading();
+        map["unitName"] = QString::fromStdString(m.getUnitName());
+        result.append(map);
+      }
+      return result;
+    }
   }
   return {};
 }
 
 QHash<int, QByteArray> StationModel::roleNames() const {
   QHash<int, QByteArray> roles;
-  roles[static_cast<int>(StationRoles::LATITUDE_ROLE)] = "latitude";
-  roles[static_cast<int>(StationRoles::LONGITUDE_ROLE)] = "longitude";
   roles[static_cast<int>(StationRoles::LABEL_ROLE)] = "label";
   roles[static_cast<int>(StationRoles::TOWN_ROLE)] = "town";
+  roles[static_cast<int>(StationRoles::LATITUDE_ROLE)] = "latitude";
+  roles[static_cast<int>(StationRoles::LONGITUDE_ROLE)] = "longitude";
+  roles[static_cast<int>(StationRoles::RLOI_ROLE)] = "RLOIid";
+  roles[static_cast<int>(StationRoles::CATCHMENT_ROLE)] = "catchmentName";
+  roles[static_cast<int>(StationRoles::DATE_ROLE)] = "dateOpened";
+  roles[static_cast<int>(StationRoles::RIVER_ROLE)] = "riverName";
+  roles[static_cast<int>(StationRoles::NOTATION_ROLE)] = "notation";
+  roles[static_cast<int>(StationRoles::MEASURES_ROLE)] = "measures";
   return roles;
-}
-
-QVariantMap StationModel::getStation(int index) const {
-  if (index < 0 || static_cast<size_t>(index) >= m_stations.size()) {
-    return {};
-  }
-
-  const Station& station = m_stations[index];
-  QVariantMap data;
-  data["label"] = QString::fromStdString(station.getLabel());
-  data["town"] = QString::fromStdString(station.getTown());
-  data["latitude"] = station.getLat();
-  data["longitude"] = station.getLon();
-  data["RLOIid"] = QString::fromStdString(station.getRLOIid());
-  data["catchmentName"] = QString::fromStdString(station.getCatchmentName());
-  data["dateOpened"] = QString::fromStdString(station.getDateOpened());
-  data["riverName"] = QString::fromStdString(station.getRiverName());
-  data["notation"] = QString::fromStdString(station.getNotation());
-
-  return data;
-}
-
-QVariantList StationModel::getMeasures(int index) const {
-  if (index < 0 || static_cast<size_t>(index) >= m_stations.size()) {
-    return {};
-  }
-
-  const Station& station = m_stations[index];
-  const auto& measures = station.getMeasures();
-
-  QVariantList result;
-  for (const auto& measure : measures) {
-    QVariantMap m;
-    m["parameter"] = QString::fromStdString(measure.getParameter());
-    m["parameterName"] = QString::fromStdString(measure.getParameterName());
-    m["unitName"] = QString::fromStdString(measure.getUnitName());
-    m["qualifier"] = QString::fromStdString(measure.getQualifier());
-    m["latestReading"] = measure.getLatestReading();
-    result.append(m);
-  }
-
-  return result;
 }
 
 bool StationModel::fetchMeasures(int index) {
