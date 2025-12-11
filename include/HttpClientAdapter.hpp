@@ -7,6 +7,6 @@
 class HttpClientAdapter : public IHttpClient {
   public:
     std::optional<std::string> fetchUrl(const std::string& url) override {
-      return HttpClient::fetchUrl(url);
+      return HttpClient::getInstance().fetchUrl(url);
     }
 };

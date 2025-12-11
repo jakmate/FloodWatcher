@@ -79,8 +79,8 @@ void WarningModel::fetchWarnings() {
   std::cout << "Fetching warnings at "
             << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss").toStdString() << "\n";
 
-  auto response =
-      HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
+  auto response = HttpClient::getInstance().fetchUrl(
+      "https://environment.data.gov.uk/flood-monitoring/id/floods");
 
   if (!response) {
     std::cerr << "Failed to fetch warnings\n";
@@ -108,16 +108,45 @@ void WarningModel::fetchWarnings() {
 }
 
 void WarningModel::updateWarnings(const std::vector<Warning>& newWarnings) {
-  beginResetModel();
-  m_warnings = newWarnings;
-  m_warnings.shrink_to_fit();
-
-  // Sort by severity level
-  std::sort(m_warnings.begin(), m_warnings.end(), [](const Warning& a, const Warning& b) {
+  auto sortedNew = newWarnings;
+  std::sort(sortedNew.begin(), sortedNew.end(), [](const Warning& a, const Warning& b) {
     return a.getSeverityLevel() < b.getSeverityLevel();
   });
 
-  endResetModel();
+  // Check if data actually changed
+  if (m_warnings.size() == sortedNew.size()) {
+    bool identical = true;
+    for (size_t i = 0; i < m_warnings.size(); ++i) {
+      // Compare by ID or relevant fields
+      if (m_warnings[i].getDescription() != sortedNew[i].getDescription() ||
+          m_warnings[i].getSeverityLevel() != sortedNew[i].getSeverityLevel()) {
+        identical = false;
+        break;
+      }
+    }
+
+    if (identical) {
+      // No changes, skip update
+      return;
+    }
+  }
+
+  // Determine if we can use row updates or need full reset
+  bool needsReset = (m_warnings.size() != sortedNew.size());
+
+  if (needsReset) {
+    beginResetModel();
+    m_warnings = std::move(sortedNew);
+    m_warnings.shrink_to_fit();
+    endResetModel();
+  } else {
+    // Update rows individually
+    for (size_t i = 0; i < m_warnings.size(); ++i) {
+      m_warnings[i] = sortedNew[i];
+      QModelIndex idx = index(static_cast<int>(i));
+      emit dataChanged(idx, idx);
+    }
+  }
 }
 
 int WarningModel::calculateNextUpdateMs() {

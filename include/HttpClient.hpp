@@ -1,12 +1,13 @@
 #pragma once
 #include <curl/curl.h>
+#include <deque>
 #include <mutex>
 #include <optional>
 #include <string>
 
 class HttpClient {
   public:
-    HttpClient();
+    HttpClient(size_t poolSize = 10);
     ~HttpClient();
     HttpClient(const HttpClient&) = delete;
     HttpClient& operator=(const HttpClient&) = delete;
@@ -14,17 +15,47 @@ class HttpClient {
     HttpClient& operator=(HttpClient&&) = delete;
 
     // Fetch URL using connection reuse
-    static std::optional<std::string> fetchUrl(const std::string& url);
+    std::optional<std::string> fetchUrl(const std::string& url);
 
     // Get singleton instance
     static HttpClient& getInstance();
 
   private:
-    // Thread-local storage for curl handles to avoid thread safety issues
-    static thread_local CURL* threadCurlHandle;
+    // RAII wrapper for CURL handle with automatic return to pool
+    class CurlHandle {
+      public:
+        CurlHandle(CURL* handle, HttpClient* client) : handle_(handle), client_(client) {}
+        ~CurlHandle() {
+          if (handle_ && client_) {
+            client_->returnHandle(handle_);
+          }
+        }
 
-    // Initialize curl handle for current thread
-    static CURL* getThreadCurlHandle();
+        CurlHandle(const CurlHandle&) = delete;
+        CurlHandle& operator=(const CurlHandle&) = delete;
+        CurlHandle(CurlHandle&& other) noexcept : handle_(other.handle_), client_(other.client_) {
+          other.handle_ = nullptr;
+          other.client_ = nullptr;
+        }
+
+        CURL* get() const {
+          return handle_;
+        }
+
+      private:
+        CURL* handle_;
+        HttpClient* client_;
+    };
+
+    // Pool management
+    std::deque<CURL*> availableHandles_;
+    std::mutex poolMutex_;
+    size_t poolSize_;
+    size_t createdHandles_;
+
+    // Get handle from pool
+    CurlHandle acquireHandle();
+    void returnHandle(CURL* handle);
 
     // Set common options that persist across requests
     static void applyPersistentOptions(CURL* curl);

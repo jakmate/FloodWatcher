@@ -85,7 +85,7 @@ bool StationModel::fetchMeasures(int index) {
   std::string url = "https://environment.data.gov.uk/flood-monitoring/id/stations/" +
                     station.getNotation() + "/measures";
 
-  auto response = HttpClient::fetchUrl(url);
+  auto response = HttpClient::getInstance().fetchUrl(url);
   if (!response) {
     std::cerr << "Failed to fetch measures for station " << station.getNotation() << '\n';
     return false;

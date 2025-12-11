@@ -13,7 +13,8 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 ## To Do
 
-- Load warnings in bg on launch?
+- Improve fetching polygons
+- Improve qt (create clusters with stations?)
 - Fix builds
 - Improve profiling (hard to read)
 - gtest vs Qt Test (or keep both use depending on file)

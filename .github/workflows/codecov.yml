@@ -60,7 +60,7 @@ jobs:
             -j \
             --filter ../src/ \
             --filter ../include/ \
-            --exclude ../tests/ \
+            --exclude '.*tests/.*' \
             --exclude-unreachable-branches \
             --xml -o coverage.xml \
             --print-summary

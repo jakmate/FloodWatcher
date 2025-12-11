@@ -5,6 +5,7 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
 #include <QQmlContext>
+#include <future>
 #include <iostream>
 
 static inline auto msSince(std::chrono::steady_clock::time_point t) {
@@ -19,21 +20,31 @@ int main(int argc, char* argv[]) {
   try {
     QGuiApplication app(argc, argv);
 
-    // Fetch data
     MonitoringData monitoringData;
 
-    // Stations
+    // Fetch stations and warnings concurrently
     auto t1 = std::chrono::steady_clock::now();
-    auto response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/"
-                                         "id/stations?status=Active");
+    auto stationsFuture = std::async(std::launch::async, []() {
+      return HttpClient::getInstance().fetchUrl(
+          "https://environment.data.gov.uk/flood-monitoring/id/stations?status=Active");
+    });
+
+    auto warningsFuture = std::async(std::launch::async, []() {
+      return HttpClient::getInstance().fetchUrl(
+          "https://environment.data.gov.uk/flood-monitoring/id/floods");
+    });
+
+    auto stationsResponse = stationsFuture.get();
+    auto warningsResponse = warningsFuture.get();
     std::cout << "fetch stations: " << msSince(t1) << " ms\n";
 
-    if (!response) {
+    // Stations
+    if (!stationsResponse) {
       std::cerr << "Failed to fetch stations data" << '\n';
       return 1;
     }
 
-    std::string readBuffer = *response;
+    std::string readBuffer = *stationsResponse;
 
     auto t2 = std::chrono::steady_clock::now();
     try {
@@ -52,16 +63,12 @@ int main(int argc, char* argv[]) {
     std::cout << "get stations: " << msSince(t3) << " ms\n";
 
     // Warnings
-    auto t4 = std::chrono::steady_clock::now();
-    response = HttpClient::fetchUrl("https://environment.data.gov.uk/flood-monitoring/id/floods");
-    std::cout << "fetch warnings: " << msSince(t4) << " ms\n";
-
-    if (!response) {
+    if (!warningsResponse) {
       std::cerr << "Failed to fetch warning data" << '\n';
       return 1;
     }
 
-    readBuffer = *response;
+    readBuffer = *warningsResponse;
 
     auto t5 = std::chrono::steady_clock::now();
     try {
