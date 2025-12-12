@@ -3,6 +3,7 @@
 #include "MockHttpClient.hpp"
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
+#include <HttpClient.hpp>
 
 using json = nlohmann::json;
 
@@ -112,7 +113,7 @@ TEST(ParseStationsTest, CatchesInvalidJsonAndContinues) {
 class MonitoringDataTest : public ::testing::Test {
   private:
     MockHttpClient mockClient;
-    MonitoringData data{&mockClient};
+    MonitoringData data;
 
   protected:
     MonitoringData& getData() {
@@ -123,6 +124,7 @@ class MonitoringDataTest : public ::testing::Test {
     }
 
     void SetUp() override {
+      HttpClient::setInstance(&mockClient);
       json testWarning1 = R"({
             "floodAreaID": "test1",
             "description": "Test warning 1",
@@ -170,6 +172,10 @@ class MonitoringDataTest : public ::testing::Test {
                 }
             }]
         })");
+    }
+
+    void TearDown() override {
+      HttpClient::setInstance(nullptr);
     }
 };
 

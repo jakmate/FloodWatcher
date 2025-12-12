@@ -5,6 +5,7 @@
 // Static members initialization
 bool HttpClient::curlInitialized = false;
 std::once_flag HttpClient::curlInitFlag;
+IHttpClient* HttpClient::testInstance = nullptr;
 
 HttpClient::HttpClient(size_t poolSize) : poolSize_(poolSize), createdHandles_(0) {
   std::call_once(curlInitFlag, []() {
@@ -30,8 +31,15 @@ void HttpClient::cleanupCurl() {
 }
 
 HttpClient& HttpClient::getInstance() {
+  if (testInstance) {
+    return *static_cast<HttpClient*>(testInstance);
+  }
   static HttpClient instance;
   return instance;
+}
+
+void HttpClient::setInstance(IHttpClient* instance) {
+  testInstance = instance;
 }
 
 void HttpClient::applyPersistentOptions(CURL* curl) {

@@ -4,8 +4,9 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include "IHttpClient.hpp"
 
-class HttpClient {
+class HttpClient : public IHttpClient {
   public:
     HttpClient(size_t poolSize = 10);
     ~HttpClient();
@@ -15,10 +16,11 @@ class HttpClient {
     HttpClient& operator=(HttpClient&&) = delete;
 
     // Fetch URL using connection reuse
-    std::optional<std::string> fetchUrl(const std::string& url);
+    std::optional<std::string> fetchUrl(const std::string& url) override;
 
     // Get singleton instance
     static HttpClient& getInstance();
+    static void setInstance(IHttpClient* instance);
 
   private:
     // RAII wrapper for CURL handle with automatic return to pool
@@ -70,4 +72,5 @@ class HttpClient {
     // Track initialization state
     static bool curlInitialized;
     static std::once_flag curlInitFlag;
+    static IHttpClient* testInstance;
 };

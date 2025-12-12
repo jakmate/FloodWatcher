@@ -4,10 +4,6 @@
 #include <iostream>
 #include <vector>
 
-HttpClientAdapter MonitoringData::defaultClient{};
-
-MonitoringData::MonitoringData(IHttpClient* client) : httpClient(client) {}
-
 void MonitoringData::parseWarnings(const json& apiResponse) {
   if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
     for (const auto& item : apiResponse["items"]) {
@@ -39,7 +35,7 @@ void MonitoringData::fetchAllPolygonsAsync() {
   for (auto& warning : warnings) {
     if (!warning.getPolygonUrl().empty()) {
       futures.push_back(std::async(std::launch::async, [this, &warning, &coutMutex]() {
-        auto polygonData = httpClient->fetchUrl(warning.getPolygonUrl());
+        auto polygonData = HttpClient::getInstance().fetchUrl(warning.getPolygonUrl());
         if (polygonData) {
           try {
             json polygonJson = json::parse(*polygonData);

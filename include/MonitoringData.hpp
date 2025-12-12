@@ -1,6 +1,4 @@
 #pragma once
-#include "HttpClientAdapter.hpp"
-#include "IHttpClient.hpp"
 #include "Station.hpp"
 #include "Warning.hpp"
 #include <nlohmann/json.hpp>
@@ -12,8 +10,6 @@ class MonitoringData {
     friend class MonitoringDataTest;
 
   public:
-    explicit MonitoringData(IHttpClient* client = &defaultClient);
-
     void parseWarnings(const json& apiResponse);
     void parseStations(const json& apiResponse);
     void fetchAllPolygonsAsync();
@@ -28,6 +24,4 @@ class MonitoringData {
   private:
     std::vector<Warning> warnings;
     std::vector<Station> stations;
-    IHttpClient* httpClient;
-    static HttpClientAdapter defaultClient;
 };

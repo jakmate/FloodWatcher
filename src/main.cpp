@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
 
     auto stationsResponse = stationsFuture.get();
     auto warningsResponse = warningsFuture.get();
-    std::cout << "fetch stations: " << msSince(t1) << " ms\n";
+    std::cout << "fetch stations and warnings: " << msSince(t1) << " ms\n";
 
     // Stations
     if (!stationsResponse) {
@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
     // Polygons
     auto t6 = std::chrono::steady_clock::now();
     monitoringData.fetchAllPolygonsAsync();
-    std::cout << "fetch all polygons async: " << msSince(t6) << " ms\n";
+    std::cout << "fetch polygons: " << msSince(t6) << " ms\n";
 
     auto t7 = std::chrono::steady_clock::now();
     WarningModel warningModel(monitoringData.getWarnings());
