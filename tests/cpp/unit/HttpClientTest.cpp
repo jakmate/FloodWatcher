@@ -23,8 +23,8 @@ TEST(HttpClientTest, InvalidUrlReturnsNullopt) {
 }
 
 TEST(HttpClientTest, SingletonReturnsSameInstance) {
-  HttpClient& instance1 = HttpClient::getInstance();
-  HttpClient& instance2 = HttpClient::getInstance();
+  IHttpClient& instance1 = HttpClient::getInstance();
+  IHttpClient& instance2 = HttpClient::getInstance();
 
   EXPECT_EQ(&instance1, &instance2);
 }

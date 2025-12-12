@@ -8,8 +8,10 @@ class StationModelTest : public QObject {
 
   private slots:
     static void testRowCount();
+    static void testRowCountWithValidParent();
     static void testDataReturnsCorrectValues();
     static void testDataReturnsEmptyForInvalidIndex();
+    static void testDataReturnsEmptyForUnknownRole();
     static void testRoleNames();
 };
 
@@ -22,6 +24,17 @@ void StationModelTest::testRowCount() {
 
   StationModel model(stations);
   QCOMPARE(model.rowCount(), 2);
+}
+
+void StationModelTest::testRowCountWithValidParent() {
+  json s = R"({"label": "1", "RLOIid": "2321"})"_json;
+  StationModel model({Station::fromJson(s)});
+
+  // Create a valid parent index
+  QModelIndex validParent = model.index(0, 0);
+
+  // Should return 0 for valid parent (flat list model)
+  QCOMPARE(model.rowCount(validParent), 0);
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity)
@@ -87,6 +100,17 @@ void StationModelTest::testDataReturnsEmptyForInvalidIndex() {
 
   QVERIFY(!model.data(QModelIndex(), Qt::UserRole).isValid());
   QVERIFY(!model.data(model.index(10, 0), Qt::UserRole).isValid());
+}
+
+void StationModelTest::testDataReturnsEmptyForUnknownRole() {
+  json s = R"({"label": "test", "RLOIid": "1234"})"_json;
+  StationModel model({Station::fromJson(s)});
+
+  QModelIndex idx = model.index(0, 0);
+
+  // Test with a role that's not in WarningRoles enum
+  QVERIFY(!model.data(idx, Qt::DisplayRole).isValid());
+  QVERIFY(!model.data(idx, 9999).isValid());
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity)

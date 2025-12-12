@@ -10,14 +10,20 @@ class WarningModelTest : public QObject {
 
   private slots:
     static void testRowCount();
+    static void testRowCountWithValidParent();
     static void testDataReturnsCorrectValues();
     static void testDataReturnsEmptyForInvalidIndex();
+    static void testDataReturnsEmptyForUnknownRole();
     static void testRoleNames();
     static void testSortsBySeverityLevel();
     static void testGetPolygonPath();
     static void testGetPolygonPathEmpty();
-    static void testUpdateWarnings();
+    static void testUpdateWarningsWithNewData();
+    static void testUpdateWarningsWithIdenticalData();
+    static void testUpdateWarningsWithDifferentSize();
     static void testCalculateNextUpdateMs();
+    static void testStartAutoUpdate();
+    static void testStopAutoUpdate();
 };
 
 void WarningModelTest::testRowCount() {
@@ -29,6 +35,17 @@ void WarningModelTest::testRowCount() {
 
   WarningModel model(warnings);
   QCOMPARE(model.rowCount(), 2);
+}
+
+void WarningModelTest::testRowCountWithValidParent() {
+  json w = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w)});
+
+  // Create a valid parent index
+  QModelIndex validParent = model.index(0, 0);
+
+  // Should return 0 for valid parent (flat list model)
+  QCOMPARE(model.rowCount(validParent), 0);
 }
 
 void WarningModelTest::testDataReturnsCorrectValues() {
@@ -58,6 +75,17 @@ void WarningModelTest::testDataReturnsEmptyForInvalidIndex() {
 
   QVERIFY(!model.data(QModelIndex(), Qt::UserRole).isValid());
   QVERIFY(!model.data(model.index(10, 0), Qt::UserRole).isValid());
+}
+
+void WarningModelTest::testDataReturnsEmptyForUnknownRole() {
+  json w = R"({"floodAreaID": "test", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w)});
+
+  QModelIndex idx = model.index(0, 0);
+
+  // Test with a role that's not in WarningRoles enum
+  QVERIFY(!model.data(idx, Qt::DisplayRole).isValid());
+  QVERIFY(!model.data(idx, 9999).isValid());
 }
 
 void WarningModelTest::testRoleNames() {
@@ -116,16 +144,47 @@ void WarningModelTest::testGetPolygonPathEmpty() {
   QVERIFY(path.isEmpty());
 }
 
-void WarningModelTest::testUpdateWarnings() {
-  WarningModel model({});
-  QSignalSpy spy(&model, &QAbstractItemModel::modelReset);
+void WarningModelTest::testUpdateWarningsWithNewData() {
+  json w1 = R"({"floodAreaID": "1", "description": "Old", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w1)});
 
-  json w = R"({"floodAreaID": "new", "severityLevel": 1})"_json;
-  json w2 = R"({"floodAreaID": "new2", "severityLevel": 2})"_json;
-  model.updateWarnings({Warning::fromJson(w2), Warning::fromJson(w)});
+  QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+
+  json w2 = R"({"floodAreaID": "1", "description": "New", "severityLevel": 2})"_json;
+  model.updateWarnings({Warning::fromJson(w2)});
+
+  QCOMPARE(model.rowCount(), 1);
+  QCOMPARE(dataChangedSpy.count(), 1);
+  QCOMPARE(model.data(model.index(0, 0), Qt::UserRole + 1).toString(), QString("New"));
+}
+
+void WarningModelTest::testUpdateWarningsWithIdenticalData() {
+  json w = R"({"floodAreaID": "1", "description": "Same", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w)});
+
+  QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+  QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+
+  // Update with identical data
+  model.updateWarnings({Warning::fromJson(w)});
+
+  // Should not trigger any signals
+  QCOMPARE(dataChangedSpy.count(), 0);
+  QCOMPARE(resetSpy.count(), 0);
+}
+
+void WarningModelTest::testUpdateWarningsWithDifferentSize() {
+  json w1 = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w1)});
+
+  QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
+
+  json w2 = R"({"floodAreaID": "2", "severityLevel": 1})"_json;
+  json w3 = R"({"floodAreaID": "3", "severityLevel": 3})"_json;
+  model.updateWarnings({Warning::fromJson(w2), Warning::fromJson(w3)});
 
   QCOMPARE(model.rowCount(), 2);
-  QCOMPARE(spy.count(), 1);
+  QCOMPARE(resetSpy.count(), 1);
 }
 
 void WarningModelTest::testCalculateNextUpdateMs() {
@@ -134,6 +193,36 @@ void WarningModelTest::testCalculateNextUpdateMs() {
   // Should be between 0 and 15 minutes
   QVERIFY(delayMs > 0);
   QVERIFY(delayMs <= 15 * 60 * 1000);
+}
+
+void WarningModelTest::testStartAutoUpdate() {
+  json w = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w)});
+
+  model.startAutoUpdate();
+
+  auto* timer = model.findChild<QTimer*>();
+  if (timer == nullptr) {
+    QFAIL("Timer not found");
+    return;
+  }
+
+  QVERIFY(timer->isActive());
+  QVERIFY(timer->isSingleShot());
+
+  model.stopAutoUpdate();
+}
+
+void WarningModelTest::testStopAutoUpdate() {
+  json w = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
+  WarningModel model({Warning::fromJson(w)});
+
+  model.startAutoUpdate();
+  auto* timer = model.findChild<QTimer*>();
+  QVERIFY(timer->isActive());
+
+  model.stopAutoUpdate();
+  QVERIFY(!timer->isActive());
 }
 
 QTEST_MAIN(WarningModelTest)

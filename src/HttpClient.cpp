@@ -30,9 +30,9 @@ void HttpClient::cleanupCurl() {
   }
 }
 
-HttpClient& HttpClient::getInstance() {
-  if (testInstance) {
-    return *static_cast<HttpClient*>(testInstance);
+IHttpClient& HttpClient::getInstance() {
+  if (testInstance != nullptr) {
+    return *testInstance;
   }
   static HttpClient instance;
   return instance;

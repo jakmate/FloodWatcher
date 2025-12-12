@@ -1,9 +1,9 @@
 // tests/unit/MonitoringDataTest.cpp
 #include "MonitoringData.hpp"
 #include "MockHttpClient.hpp"
+#include <HttpClient.hpp>
 #include <gtest/gtest.h>
 #include <nlohmann/json.hpp>
-#include <HttpClient.hpp>
 
 using json = nlohmann::json;
 

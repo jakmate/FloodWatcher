@@ -1,10 +1,10 @@
 #pragma once
+#include "IHttpClient.hpp"
 #include <curl/curl.h>
 #include <deque>
 #include <mutex>
 #include <optional>
 #include <string>
-#include "IHttpClient.hpp"
 
 class HttpClient : public IHttpClient {
   public:
@@ -19,7 +19,7 @@ class HttpClient : public IHttpClient {
     std::optional<std::string> fetchUrl(const std::string& url) override;
 
     // Get singleton instance
-    static HttpClient& getInstance();
+    static IHttpClient& getInstance();
     static void setInstance(IHttpClient* instance);
 
   private:
