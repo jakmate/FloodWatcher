@@ -60,7 +60,7 @@ jobs:
         run: |
           $qtpath = "${{ github.workspace }}\6.10.0\mingw_64"
           $exe = "deploy\flood_monitor.exe"
-          & "$qtpath\bin\windeployqt.exe" --release --compiler-runtime $exe
+          & "$qtpath\bin\windeployqt.exe" --release --compiler-runtime --quick $exe
 
       - name: Copy vcpkg DLLs
         run: |
@@ -69,23 +69,14 @@ jobs:
             Copy-Item "$vcpkgBin\*.dll" -Destination deploy\ -Force
           }
 
-      - name: Verify DLLs
-        run: |
-          dir ${{ github.workspace }}\vcpkg\installed\x64-mingw-dynamic\bin | findstr libcurl
-
       - name: Copy QML resources
         run: |
           if (Test-Path "build\qml") {
             Copy-Item "build\qml" -Destination deploy\ -Recurse -Force
           }
 
-      - name: Create portable ZIP
-        run: |
-          New-Item -ItemType Directory -Force -Path artifacts
-          powershell Compress-Archive -Path deploy\* -DestinationPath artifacts\flood-monitor-windows.zip
-
       - name: Upload portable ZIP
         uses: actions/upload-artifact@v4
         with:
           name: flood-monitor-windows
-          path: artifacts\flood-monitor-windows.zip
+          path: artifacts\flood-monitor-windows
