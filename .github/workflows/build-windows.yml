@@ -41,7 +41,7 @@ jobs:
           .\vcpkg\bootstrap-vcpkg.bat
           .\vcpkg\vcpkg install nlohmann-json:x64-mingw-dynamic curl:x64-mingw-dynamic
 
-      - name: Configure CMake (Ninja + MinGW)
+      - name: Configure CMake
         run: |
           cmake -B build -G "Ninja" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.10.0/mingw_64" -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
 
@@ -49,26 +49,38 @@ jobs:
         run: |
           cmake --build build --config Release
 
+      - name: Prepare deployment directory
+        run: |
+          $exe = (Get-ChildItem build -Recurse -Filter *.exe | Select-Object -First 1).FullName
+          $exeDir = Split-Path $exe
+          New-Item -ItemType Directory -Force -Path deploy
+          Copy-Item $exe -Destination deploy\
+
       - name: Run windeployqt
         run: |
           $qtpath = "${{ github.workspace }}\6.10.0\mingw_64"
-          $exe = (Get-ChildItem build -Recurse -Filter *.exe | Select-Object -First 1).FullName
+          $exe = "deploy\flood_monitor.exe"
           & "$qtpath\bin\windeployqt.exe" --release --compiler-runtime $exe
 
       - name: Copy vcpkg DLLs
         run: |
-          $buildDir = "${{ github.workspace }}\build"
           $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-mingw-dynamic\bin"
           if (Test-Path $vcpkgBin) {
-            Copy-Item "$vcpkgBin\*.dll" -Destination $buildDir -ErrorAction SilentlyContinue
+            Copy-Item "$vcpkgBin\*.dll" -Destination deploy\ -Force
+          }
+
+      - name: Copy QML resources
+        run: |
+          if (Test-Path "build\qml") {
+            Copy-Item "build\qml" -Destination deploy\ -Recurse -Force
           }
 
       - name: Create portable ZIP
         run: |
-          powershell Compress-Archive -Path build\* -DestinationPath windows-portable.zip
+          powershell Compress-Archive -Path deploy\* -DestinationPath flood-monitor-windows.zip
 
       - name: Upload portable ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: windows-portable
-          path: windows-portable.zip
+          name: flood-monitor-windows
+          path: flood-monitor-windows.zip
