@@ -43,11 +43,11 @@ jobs:
 
       - name: Configure CMake
         run: |
-          cmake -B build -G "Ninja" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.10.0/mingw_64" -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
+          cmake -B build -G "Ninja" -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.10.0/mingw_64" -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
 
       - name: Build (Ninja)
         run: |
-          cmake --build build --config Release
+          cmake --build build
 
       - name: Prepare deployment directory
         run: |
@@ -69,6 +69,10 @@ jobs:
             Copy-Item "$vcpkgBin\*.dll" -Destination deploy\ -Force
           }
 
+      - name: Verify DLLs
+        run: |
+          dir ${{ github.workspace }}\vcpkg\installed\x64-mingw-dynamic\bin | findstr libcurl
+
       - name: Copy QML resources
         run: |
           if (Test-Path "build\qml") {
@@ -77,10 +81,11 @@ jobs:
 
       - name: Create portable ZIP
         run: |
-          powershell Compress-Archive -Path deploy\* -DestinationPath flood-monitor-windows.zip
+          New-Item -ItemType Directory -Force -Path artifacts
+          powershell Compress-Archive -Path deploy\* -DestinationPath artifacts\flood-monitor-windows.zip
 
       - name: Upload portable ZIP
         uses: actions/upload-artifact@v4
         with:
           name: flood-monitor-windows
-          path: flood-monitor-windows.zip
+          path: artifacts\flood-monitor-windows.zip
