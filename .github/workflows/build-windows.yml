@@ -35,9 +35,15 @@ jobs:
       - name: Install Ninja
         run: choco install ninja
 
+      - name: Install vcpkg dependencies
+        run: |
+          git clone https://github.com/microsoft/vcpkg.git
+          .\vcpkg\bootstrap-vcpkg.bat
+          .\vcpkg\vcpkg install nlohmann-json:x64-mingw-dynamic curl:x64-mingw-dynamic
+
       - name: Configure CMake (Ninja + MinGW)
         run: |
-          cmake -B build -G "Ninja" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.10.0/mingw_64"
+          cmake -B build -G "Ninja" -DCMAKE_PREFIX_PATH="${{ github.workspace }}/6.10.0/mingw_64" -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-mingw-dynamic
 
       - name: Build (Ninja)
         run: |
@@ -48,6 +54,14 @@ jobs:
           $qtpath = "${{ github.workspace }}\6.10.0\mingw_64"
           $exe = (Get-ChildItem build -Recurse -Filter *.exe | Select-Object -First 1).FullName
           & "$qtpath\bin\windeployqt.exe" --release --compiler-runtime $exe
+
+      - name: Copy vcpkg DLLs
+        run: |
+          $buildDir = "${{ github.workspace }}\build"
+          $vcpkgBin = "${{ github.workspace }}\vcpkg\installed\x64-mingw-dynamic\bin"
+          if (Test-Path $vcpkgBin) {
+            Copy-Item "$vcpkgBin\*.dll" -Destination $buildDir -ErrorAction SilentlyContinue
+          }
 
       - name: Create portable ZIP
         run: |
