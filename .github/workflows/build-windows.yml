@@ -75,6 +75,11 @@ jobs:
             Copy-Item "build\qml" -Destination deploy\ -Recurse -Force
           }
 
+      - name: Create portable ZIP
+        run: |
+          New-Item -ItemType Directory -Force -Path artifacts
+          powershell Compress-Archive -Path deploy\* -DestinationPath artifacts\flood-monitor-windows.zip
+
       - name: Upload portable ZIP
         uses: actions/upload-artifact@v4
         with:
