@@ -14,14 +14,7 @@ FetchContent_MakeAvailable(googletest)
 # Include the GoogleTest module
 include(GoogleTest)
 
-# Include directories
-include_directories(
-    ${CMAKE_SOURCE_DIR}/include
-    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
-)
-
-# First, create a library from core components
-# This is needed because you can't link an executable to an executable
+# Core library for testing
 add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/src/MonitoringData.cpp
     ${CMAKE_SOURCE_DIR}/src/Warning.cpp
@@ -33,11 +26,6 @@ add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/include/WarningModel.hpp
     ${CMAKE_SOURCE_DIR}/include/StationModel.hpp
 )
-
-if(ENABLE_COVERAGE)
-    target_compile_options(flood_monitor_core PRIVATE --coverage)
-    target_link_options(flood_monitor_core PRIVATE --coverage)
-endif()
 
 target_include_directories(flood_monitor_core PUBLIC 
     ${CMAKE_SOURCE_DIR}/include
@@ -51,7 +39,12 @@ target_link_libraries(flood_monitor_core
         Qt6::Positioning
 )
 
-# Create test executables for GoogleTest
+if(ENABLE_COVERAGE)
+    target_compile_options(flood_monitor_core PRIVATE --coverage)
+    target_link_options(flood_monitor_core PRIVATE --coverage)
+endif()
+
+# GoogleTest tests
 add_executable(gtest_unit_tests
     unit/MonitoringDataTest.cpp
     unit/HttpClientTest.cpp
@@ -60,27 +53,48 @@ add_executable(gtest_unit_tests
     unit/WarningTest.cpp
 )
 
+target_include_directories(gtest_unit_tests PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+)
+
 target_link_libraries(gtest_unit_tests
     PRIVATE
         GTest::gtest_main
         GTest::gmock
         flood_monitor_core
-        CURL::libcurl
-        nlohmann_json::nlohmann_json
-        Qt6::Core
-        Qt6::Positioning
 )
 
-# Register GoogleTest tests
+if(ENABLE_COVERAGE)
+    target_compile_options(gtest_unit_tests PRIVATE --coverage)
+    target_link_options(gtest_unit_tests PRIVATE --coverage)
+endif()
+
 gtest_discover_tests(gtest_unit_tests)
 
-# Create test executables for QtTest and register them
+# QtTest tests
 add_executable(qttest_warning_model unit/WarningModelTest.cpp)
-target_link_libraries(qttest_warning_model PRIVATE flood_monitor_core Qt6::Core Qt6::Positioning Qt6::Test)
+target_link_libraries(qttest_warning_model 
+    PRIVATE 
+        flood_monitor_core 
+        Qt6::Test
+        Qt6::Positioning
+)
+if(ENABLE_COVERAGE)
+    target_compile_options(qttest_warning_model PRIVATE --coverage)
+    target_link_options(qttest_warning_model PRIVATE --coverage)
+endif()
 add_test(NAME qttest_warning_model COMMAND qttest_warning_model)
 
 add_executable(qttest_station_model unit/StationModelTest.cpp)
-target_link_libraries(qttest_station_model PRIVATE flood_monitor_core Qt6::Core Qt6::Test)
+target_link_libraries(qttest_station_model 
+    PRIVATE 
+        flood_monitor_core 
+        Qt6::Test
+)
+if(ENABLE_COVERAGE)
+    target_compile_options(qttest_station_model PRIVATE --coverage)
+    target_link_options(qttest_station_model PRIVATE --coverage)
+endif()
 add_test(NAME qttest_station_model COMMAND qttest_station_model)
 
 # Target for all unit tests

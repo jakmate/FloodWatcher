@@ -2,3 +2,4 @@
 /.vscode
 /.venv
 qml/*.qml.bak
+CMakeUserPresets.json

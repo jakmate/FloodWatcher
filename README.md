@@ -13,7 +13,7 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 ## To Do
 
-- Improve fetching polygons
+- Settle on a package manager...
 - Improve qt (create clusters with stations?)
 - Fix builds
 - Improve profiling (hard to read)
@@ -25,7 +25,7 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 - CMake 3.15+
 - libcurl
 - nlohmann/json
-- Qt 6 (with Core,CQml, Gui, and Positioning modules)
+- Qt 6 (with Core, Qml, Gui, and Positioning modules)
 
 ## Building
 
@@ -40,7 +40,7 @@ cmake --build build
 
 ```bash
 # Download gcovr
-cmake -GNinja -DCMAKE_BUILD_TYPE=Debug -DENABLE_COVERAGE=ON -DBUILD_TESTS=ON -B build
+cmake -GNinja -DENABLE_COVERAGE=ON -DBUILD_TESTS=ON -B build
 cmake --build build --target unit_tests
 cmake --build build --target coverage
 ```
