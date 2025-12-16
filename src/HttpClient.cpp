@@ -54,6 +54,13 @@ void HttpClient::applyPersistentOptions(CURL* curl) {
   curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 60L);
   curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
   curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
+
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
+  curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
+  #ifdef _WIN32
+  // Use Windows native certificate store
+  curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
+  #endif
 }
 
 HttpClient::CurlHandle HttpClient::acquireHandle() {
