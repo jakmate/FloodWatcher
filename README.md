@@ -15,8 +15,8 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 - Settle on a package manager...
 - Improve qt (create clusters with stations?)
-- Fix builds
-- Improve profiling (hard to read)
+- Fix builds (Do once package manager sorted)
+- Consider curl multi for polygons (was slower but try again)
 - gtest vs Qt Test (or keep both use depending on file)
 
 ## Requirements
@@ -53,6 +53,8 @@ cmake --build build
 cd build
 ./flood_monitor.exe
 gprof flood_monitor.exe gmon.out > analysis.txt
+# or for ease of read
+gprof flood_monitor.exe gmon.out --flat-profile | head -30
 ```
 
 ## API Reference

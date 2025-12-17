@@ -1,5 +1,6 @@
 #pragma once
 #include "IHttpClient.hpp"
+#include <condition_variable>
 #include <curl/curl.h>
 #include <deque>
 #include <mutex>
@@ -52,8 +53,10 @@ class HttpClient : public IHttpClient {
     // Pool management
     std::deque<CURL*> availableHandles_;
     std::mutex poolMutex_;
+    std::condition_variable poolCond_;
     size_t poolSize_;
     size_t createdHandles_;
+    size_t inUseHandles_;
 
     // Get handle from pool
     CurlHandle acquireHandle();

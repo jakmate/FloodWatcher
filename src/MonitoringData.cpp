@@ -1,5 +1,6 @@
 #include "MonitoringData.hpp"
 #include <HttpClient.hpp>
+#include <ThreadPool.hpp>
 #include <future>
 #include <iostream>
 #include <vector>
@@ -29,12 +30,11 @@ void MonitoringData::parseStations(const json& apiResponse) {
 }
 
 void MonitoringData::fetchAllPolygonsAsync() {
-  std::vector<std::future<void>> futures;
-  std::mutex coutMutex; // For thread-safe logging
+  ThreadPool pool(10);
 
   for (auto& warning : warnings) {
     if (!warning.getPolygonUrl().empty()) {
-      futures.push_back(std::async(std::launch::async, [this, &warning, &coutMutex]() {
+      pool.enqueue([this, &warning]() {
         auto polygonData = HttpClient::getInstance().fetchUrl(warning.getPolygonUrl());
         if (polygonData) {
           try {
@@ -42,20 +42,13 @@ void MonitoringData::fetchAllPolygonsAsync() {
             warning.setFloodAreaPolygon(
                 Warning::parseGeoJsonPolygon(polygonJson["features"][0]["geometry"]));
           } catch (const std::exception& e) {
-            std::scoped_lock<std::mutex> lock(coutMutex);
             std::cerr << "Error parsing polygon from URL " << warning.getPolygonUrl() << ": "
                       << e.what() << '\n';
           }
         } else {
-          std::scoped_lock<std::mutex> lock(coutMutex);
           std::cerr << "Failed to fetch polygon from URL: " << warning.getPolygonUrl() << '\n';
         }
-      }));
+      });
     }
-  }
-
-  // Wait for all async operations to complete
-  for (auto& future : futures) {
-    future.get();
   }
 }

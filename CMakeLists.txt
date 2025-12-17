@@ -36,6 +36,7 @@ add_executable(flood_monitor
     include/Measure.hpp
     include/HttpClient.hpp
     include/GeometryTypes.hpp
+    include/ThreadPool.hpp
     qml.qrc
 )
 

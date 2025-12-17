@@ -93,6 +93,7 @@ void WarningModel::fetchWarnings() {
     json data = json::parse(*response);
     MonitoringData tempData;
     tempData.parseWarnings(data);
+    tempData.fetchAllPolygonsAsync();
 
     updateWarnings(tempData.getWarnings());
 
