@@ -1,3 +1,18 @@
+# Conan Issue:
+### using msvc
+"Qt6::QGeoPositionInfoSourceFactoryGeoclue2")
+CMake Error at build/Release/generators/cmakedeps_macros.cmake:81 (message):
+  Library 'qtposition_geoclue2' not found in package.  If
+  'qtposition_geoclue2' is a system library, declare it with
+  'cpp_info.system_libs' property
+Call Stack (most recent call first):
+  build/Release/generators/Qt6-Target-release.cmake:23 (conan_package_library_targets)
+  build/Release/generators/Qt6Targets.cmake:124 (include)
+  build/Release/generators/Qt6Config.cmake:16 (include)
+  CMakeLists.txt:19 (find_package)
+### using gcc with ucrt
+does not compile fully...
+
 # FloodWatcher
 
 [![Lint & Format](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml/badge.svg)](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml)
