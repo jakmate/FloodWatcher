@@ -15,7 +15,7 @@ endif()
 
 # Find required packages
 find_package(CURL REQUIRED)
-find_package(nlohmann_json REQUIRED)
+find_package(simdjson REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Positioning)
 
 # Create executable with files listed directly
@@ -48,7 +48,7 @@ target_include_directories(flood_monitor PRIVATE ${CMAKE_SOURCE_DIR}/include)
 target_link_libraries(flood_monitor
     PRIVATE
         CURL::libcurl
-        nlohmann_json::nlohmann_json
+        simdjson::simdjson
         Qt6::Core
         Qt6::Gui
         Qt6::Qml

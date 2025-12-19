@@ -5,6 +5,7 @@
 #include <QGeoCoordinate>
 #include <algorithm>
 #include <iostream>
+#include <simdjson.h>
 
 WarningModel::WarningModel(const std::vector<Warning>& warnings, QObject* parent)
     : QAbstractListModel(parent), m_warnings(warnings), m_updateTimer(new QTimer(this)) {
@@ -90,7 +91,16 @@ void WarningModel::fetchWarnings() {
   }
 
   try {
-    json data = json::parse(*response);
+    simdjson::dom::parser parser;
+    simdjson::dom::element data;
+    auto error = parser.parse(*response).get(data);
+
+    if (error != 0U) {
+      std::cerr << "simdjson Parse Error: " << error << "\n";
+      m_updateTimer->start(calculateNextUpdateMs());
+      return;
+    }
+
     MonitoringData tempData;
     tempData.parseWarnings(data);
     tempData.fetchAllPolygonsAsync();
@@ -100,8 +110,8 @@ void WarningModel::fetchWarnings() {
     std::cout << "Updated: " << m_warnings.size() << " warnings\n";
     emit warningsUpdated(static_cast<int>(m_warnings.size()));
 
-  } catch (const json::parse_error& e) {
-    std::cerr << "JSON Parse Error: " << e.what() << "\n";
+  } catch (const std::exception& e) {
+    std::cerr << "Parse Error: " << e.what() << "\n";
   }
 
   // Schedule next update

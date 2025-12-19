@@ -1,9 +1,7 @@
 #include "StationModel.hpp"
 #include <HttpClient.hpp>
 #include <iostream>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
+#include <simdjson.h>
 
 StationModel::StationModel(const std::vector<Station>& stations, QObject* parent)
     : QAbstractListModel(parent), m_stations(stations) {}
@@ -92,11 +90,20 @@ bool StationModel::fetchMeasures(int index) {
   }
 
   try {
-    json data = json::parse(*response);
+    simdjson::dom::parser parser;
+    simdjson::dom::element data;
+    auto error = parser.parse(*response).get(data);
 
-    if (data.contains("items") && data["items"].is_array()) {
+    if (error != 0U) {
+      std::cerr << "simdjson Parse Error for measures: " << error << '\n';
+      return false;
+    }
+
+    simdjson::dom::array items;
+    error = data["items"].get(items);
+    if (error == 0U) {
       std::vector<Measure> measures;
-      for (const auto& measureJson : data["items"]) {
+      for (auto measureJson : items) {
         measures.push_back(Measure::fromJson(measureJson));
       }
       station.setMeasures(measures);
@@ -107,8 +114,8 @@ bool StationModel::fetchMeasures(int index) {
 
       return true;
     }
-  } catch (const json::parse_error& e) {
-    std::cerr << "JSON Parse Error for measures: " << e.what() << '\n';
+  } catch (const std::exception& e) {
+    std::cerr << "Parse Error for measures: " << e.what() << '\n';
     return false;
   }
 

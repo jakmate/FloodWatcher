@@ -1,19 +1,37 @@
 #include "Measure.hpp"
+#include <cmath>
 #include <iostream>
 
-Measure Measure::fromJson(const json& jsonObj) {
+Measure Measure::fromJson(const simdjson::dom::element& jsonObj) {
   Measure measure;
-  measure.id = jsonObj.value("@id", "");
-  measure.parameter = jsonObj.value("parameter", "");
-  measure.parameterName = jsonObj.value("parameterName", "");
-  measure.period = jsonObj.value("period", 0.0);
-  measure.qualifier = jsonObj.value("qualifier", "");
-  measure.unitName = jsonObj.value("unitName", "");
 
-  if (jsonObj.contains("latestReading")) {
-    const auto& reading = jsonObj["latestReading"];
-    if (reading.is_object() && reading.contains("value")) {
-      measure.latestReading = reading["value"].get<double>();
+  auto getString = [](const simdjson::dom::element& obj, std::string_view key,
+                      const char* defaultVal) -> std::string {
+    std::string_view sv;
+    if (!obj[key].get(sv)) {
+      return std::string(sv);
+    }
+    return defaultVal;
+  };
+
+  measure.id = getString(jsonObj, "@id", "");
+  measure.parameter = getString(jsonObj, "parameter", "");
+  measure.parameterName = getString(jsonObj, "parameterName", "");
+  measure.qualifier = getString(jsonObj, "qualifier", "");
+  measure.unitName = getString(jsonObj, "unitName", "");
+
+  double periodVal = NAN;
+  if (jsonObj["period"].get(periodVal) == 0U) {
+    measure.period = periodVal;
+  } else {
+    measure.period = 0.0;
+  }
+
+  simdjson::dom::element reading;
+  if (jsonObj["latestReading"].get(reading) == 0U) {
+    double value = NAN;
+    if (reading["value"].get(value) == 0U) {
+      measure.latestReading = value;
     }
   }
 

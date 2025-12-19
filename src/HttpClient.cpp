@@ -68,7 +68,7 @@ HttpClient::CurlHandle HttpClient::acquireHandle() {
                  [this]() { return !availableHandles_.empty() || createdHandles_ < poolSize_; });
 
   // If there's an available handle, use it
-  CURL* handle;
+  CURL* handle = nullptr;
   if (!availableHandles_.empty()) {
     handle = availableHandles_.front();
     availableHandles_.pop_front();

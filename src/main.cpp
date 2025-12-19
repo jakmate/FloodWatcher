@@ -7,6 +7,7 @@
 #include <QQmlContext>
 #include <future>
 #include <iostream>
+#include <simdjson.h>
 
 static inline auto msSince(std::chrono::steady_clock::time_point t) {
   return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t)
@@ -21,6 +22,7 @@ int main(int argc, char* argv[]) {
     QGuiApplication app(argc, argv);
 
     MonitoringData monitoringData;
+    simdjson::dom::parser parser;
 
     // Fetch stations and warnings concurrently
     auto t1 = std::chrono::steady_clock::now();
@@ -31,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     auto warningsFuture = std::async(std::launch::async, []() {
       return HttpClient::getInstance().fetchUrl(
-          "https://environment.data.gov.uk/flood-monitoring/id/floods");
+          "https://environment.data.gov.uk/flood-monitoring/id/floods?min-severity=3");
     });
 
     auto stationsResponse = stationsFuture.get();
@@ -48,11 +50,17 @@ int main(int argc, char* argv[]) {
 
     auto t2 = std::chrono::steady_clock::now();
     try {
-      json data = json::parse(readBuffer);
+      simdjson::dom::element data;
+      auto error = parser.parse(readBuffer).get(data);
+      if (error != 0U) {
+        std::cerr << "simdjson Parse Error: " << error << "\n";
+        std::cerr << "Raw response:\n" << readBuffer << '\n';
+        return 1;
+      }
       monitoringData.parseStations(data);
       std::cout << "Found " << monitoringData.getStations().size() << " stations\n";
-    } catch (const json::parse_error& e) {
-      std::cerr << "JSON Parse Error: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+      std::cerr << "Parse Error: " << e.what() << "\n";
       std::cerr << "Raw response:\n" << readBuffer << '\n';
       return 1;
     }
@@ -72,11 +80,17 @@ int main(int argc, char* argv[]) {
 
     auto t5 = std::chrono::steady_clock::now();
     try {
-      json data = json::parse(readBuffer);
+      simdjson::dom::element data;
+      auto error = parser.parse(readBuffer).get(data);
+      if (error != 0U) {
+        std::cerr << "simdjson Parse Error: " << error << "\n";
+        std::cerr << "Raw response:\n" << readBuffer << '\n';
+        return 1;
+      }
       monitoringData.parseWarnings(data);
       std::cout << "Found " << monitoringData.getWarnings().size() << " warnings\n";
-    } catch (const json::parse_error& e) {
-      std::cerr << "JSON Parse Error: " << e.what() << "\n";
+    } catch (const std::exception& e) {
+      std::cerr << "Parse Error: " << e.what() << "\n";
       std::cerr << "Raw response:\n" << readBuffer << '\n';
       return 1;
     }

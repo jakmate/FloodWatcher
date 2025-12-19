@@ -1,14 +1,12 @@
 #pragma once
 #include "Measure.hpp"
-#include <nlohmann/json.hpp>
+#include <simdjson.h>
 #include <string>
 #include <vector>
 
-using json = nlohmann::json;
-
 class Station {
   public:
-    static Station fromJson(const json& jsonObj);
+    static Station fromJson(const simdjson::dom::element& jsonObj);
 
     const std::string& getRLOIid() const {
       return RLOIid;

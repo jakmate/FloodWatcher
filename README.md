@@ -1,3 +1,6 @@
+# Change Tests
+# Get rid of redundancies...
+
 # FloodWatcher
 
 [![Lint & Format](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml/badge.svg)](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml)
