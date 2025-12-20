@@ -1,5 +1,6 @@
 #include "Station.hpp"
 #include "HttpClient.hpp"
+#include <TypeUtils.hpp>
 #include <cmath>
 #include <curl/curl.h>
 #include <iostream>
@@ -119,27 +120,9 @@ Station Station::fromJson(const simdjson::dom::element& jsonObj) {
   station.lon = getActiveValue("long", 0.0);
   station.northing = getActiveValue("northing", 0L);
   station.easting = getActiveValue("easting", 0L);
-
-  std::string_view notationView;
-  if (jsonObj["notation"].get(notationView) == 0U) {
-    station.notation = std::string(notationView);
-  } else {
-    station.notation = "unknown";
-  }
-
-  std::string_view townView;
-  if (jsonObj["town"].get(townView) == 0U) {
-    station.town = std::string(townView);
-  } else {
-    station.town = "unknown";
-  }
-
-  std::string_view riverView;
-  if (jsonObj["riverName"].get(riverView) == 0U) {
-    station.riverName = std::string(riverView);
-  } else {
-    station.riverName = "unknown";
-  }
+  station.notation = getString(jsonObj, "notation", "unknown");
+  station.town = getString(jsonObj, "town", "unknown");
+  station.riverName = getString(jsonObj, "riverName", "unknown");
 
   return station;
 }

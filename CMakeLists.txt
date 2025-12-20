@@ -28,6 +28,7 @@ add_executable(flood_monitor
     src/StationModel.cpp
     src/Measure.cpp
     src/HttpClient.cpp
+    src/TypeUtils.cpp
     include/MonitoringData.hpp
     include/Warning.hpp
     include/WarningModel.hpp
@@ -37,6 +38,7 @@ add_executable(flood_monitor
     include/HttpClient.hpp
     include/GeometryTypes.hpp
     include/ThreadPool.hpp
+    include/TypeUtils.hpp
     qml.qrc
 )
 

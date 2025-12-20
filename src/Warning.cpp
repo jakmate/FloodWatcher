@@ -1,28 +1,12 @@
 #include "Warning.hpp"
 #include "HttpClient.hpp"
+#include "TypeUtils.hpp"
 #include <cmath>
 #include <curl/curl.h>
 #include <iostream>
 
 Warning Warning::fromJson(const simdjson::dom::element& jsonObj) {
   Warning warning;
-
-  auto getString = [](const simdjson::dom::element& obj, std::string_view key,
-                      const char* defaultVal) -> std::string {
-    std::string_view sv;
-    if (!obj[key].get(sv)) {
-      return std::string(sv);
-    }
-    return defaultVal;
-  };
-
-  auto getInt = [](const simdjson::dom::element& obj, std::string_view key, int defaultVal) -> int {
-    int64_t val = 0;
-    if (!obj[key].get(val)) {
-      return static_cast<int>(val);
-    }
-    return defaultVal;
-  };
 
   warning.id = getString(jsonObj, "floodAreaID", "unknown");
   warning.description = getString(jsonObj, "description", "unknown");
