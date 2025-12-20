@@ -23,6 +23,7 @@ add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/src/StationModel.cpp
     ${CMAKE_SOURCE_DIR}/src/Measure.cpp
     ${CMAKE_SOURCE_DIR}/src/HttpClient.cpp
+    ${CMAKE_SOURCE_DIR}/src/TypeUtils.cpp
     ${CMAKE_SOURCE_DIR}/include/WarningModel.hpp
     ${CMAKE_SOURCE_DIR}/include/StationModel.hpp
 )
@@ -34,7 +35,7 @@ target_include_directories(flood_monitor_core PUBLIC
 target_link_libraries(flood_monitor_core
     PRIVATE
         CURL::libcurl
-        nlohmann_json::nlohmann_json
+        simdjson::simdjson
         Qt6::Core
         Qt6::Positioning
 )

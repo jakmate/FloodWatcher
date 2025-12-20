@@ -59,8 +59,8 @@ class Station {
     std::string label;
     double lat = 0.0;
     double lon = 0.0;
-    long northing = 0;
-    long easting = 0;
+    int64_t northing = 0;
+    int64_t easting = 0;
     std::string notation;
     std::string town;
     std::string riverName;

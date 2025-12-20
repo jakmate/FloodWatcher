@@ -11,8 +11,7 @@ Checks: >
   -modernize-use-nodiscard,
   -readability-identifier-length,
   -cppcoreguidelines-avoid-magic-numbers,
-  -readability-magic-numbers,
-  -readability-function-cognitive-complexity
+  -readability-magic-numbers
 
 WarningsAsErrors: "*"
 HeaderFilterRegex: ".*"

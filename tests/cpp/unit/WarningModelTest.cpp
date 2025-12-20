@@ -4,6 +4,7 @@
 #include <QGeoCoordinate>
 #include <QSignalSpy>
 #include <QTest>
+#include <simdjson.h>
 
 class WarningModelTest : public QObject {
     Q_OBJECT
@@ -28,8 +29,17 @@ class WarningModelTest : public QObject {
 
 void WarningModelTest::testRowCount() {
   std::vector<Warning> warnings;
-  json w1 = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
-  json w2 = R"({"floodAreaID": "2", "severityLevel": 1})"_json;
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element w1;
+  simdjson::dom::element w2;
+  std::string json1 = R"({"floodAreaID": "1", "severityLevel": 2})";
+  std::string json2 = R"({"floodAreaID": "2", "severityLevel": 1})";
+  auto error1 = parser.parse(json1).get(w1);
+  QVERIFY(error1 == 0U);
+  auto error2 = parser.parse(json2).get(w2);
+  QVERIFY(error2 == 0U);
+
   warnings.push_back(Warning::fromJson(w1));
   warnings.push_back(Warning::fromJson(w2));
 
@@ -38,25 +48,35 @@ void WarningModelTest::testRowCount() {
 }
 
 void WarningModelTest::testRowCountWithValidParent() {
-  json w = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string jsonStr = R"({"floodAreaID": "1", "severityLevel": 2})";
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
+
   WarningModel model({Warning::fromJson(w)});
 
   // Create a valid parent index
   QModelIndex validParent = model.index(0, 0);
 
-  // Should return 0 for valid parent (flat list model)
+  // Should return 0 for valid parent
   QCOMPARE(model.rowCount(validParent), 0);
 }
 
 void WarningModelTest::testDataReturnsCorrectValues() {
-  json w = R"({
-        "floodAreaID": "test",
-        "description": "Test Desc",
-        "severity": "Moderate",
-        "severityLevel": 2,
-        "eaAreaName": "Test Area",
-        "message": "Test Message"
-    })"_json;
+  std::string jsonStr = R"({
+    "floodAreaID": "test",
+    "description": "Test Desc",
+    "severity": "Moderate",
+    "severityLevel": 2,
+    "eaAreaName": "Test Area",
+    "message": "Test Message"
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
   std::vector<Warning> warnings{Warning::fromJson(w)};
   WarningModel model(warnings);
@@ -72,15 +92,18 @@ void WarningModelTest::testDataReturnsCorrectValues() {
 
 void WarningModelTest::testDataReturnsEmptyForInvalidIndex() {
   WarningModel model({});
-
   QVERIFY(!model.data(QModelIndex(), Qt::UserRole).isValid());
   QVERIFY(!model.data(model.index(10, 0), Qt::UserRole).isValid());
 }
 
 void WarningModelTest::testDataReturnsEmptyForUnknownRole() {
-  json w = R"({"floodAreaID": "test", "severityLevel": 2})"_json;
-  WarningModel model({Warning::fromJson(w)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string jsonStr = R"({"floodAreaID": "test", "severityLevel": 2})";
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
+  WarningModel model({Warning::fromJson(w)});
   QModelIndex idx = model.index(0, 0);
 
   // Test with a role that's not in WarningRoles enum
@@ -101,9 +124,23 @@ void WarningModelTest::testRoleNames() {
 }
 
 void WarningModelTest::testSortsBySeverityLevel() {
-  json w1 = R"({"floodAreaID": "1", "severityLevel": 3})"_json;
-  json w2 = R"({"floodAreaID": "2", "severityLevel": 1})"_json;
-  json w3 = R"({"floodAreaID": "3", "severityLevel": 2})"_json;
+  std::string json1 = R"({"floodAreaID": "1", "severityLevel": 3})";
+  std::string json2 = R"({"floodAreaID": "2", "severityLevel": 1})";
+  std::string json3 = R"({"floodAreaID": "3", "severityLevel": 2})";
+
+  simdjson::dom::parser parser1;
+  simdjson::dom::parser parser2;
+  simdjson::dom::parser parser3;
+  simdjson::dom::element w1;
+  simdjson::dom::element w2;
+  simdjson::dom::element w3;
+
+  auto error1 = parser1.parse(json1).get(w1);
+  QVERIFY(error1 == 0U);
+  auto error2 = parser2.parse(json2).get(w2);
+  QVERIFY(error2 == 0U);
+  auto error3 = parser3.parse(json3).get(w3);
+  QVERIFY(error3 == 0U);
 
   std::vector<Warning> warnings{Warning::fromJson(w1), Warning::fromJson(w2),
                                 Warning::fromJson(w3)};
@@ -116,11 +153,16 @@ void WarningModelTest::testSortsBySeverityLevel() {
 }
 
 void WarningModelTest::testGetPolygonPath() {
-  json w = R"({
-        "floodAreaID": "test",
-        "severityLevel": 1,
-        "floodArea": {"polygon": "http://test.com"}
-    })"_json;
+  std::string jsonStr = R"({
+    "floodAreaID": "test",
+    "severityLevel": 1,
+    "floodArea": {"polygon": "http://test.com"}
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
   auto warning = Warning::fromJson(w);
 
@@ -137,20 +179,31 @@ void WarningModelTest::testGetPolygonPath() {
 }
 
 void WarningModelTest::testGetPolygonPathEmpty() {
-  json w = R"({"floodAreaID": "test", "severityLevel": 1})"_json;
-  WarningModel model({Warning::fromJson(w)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string jsonStr = R"({"floodAreaID": "test", "severityLevel": 1})";
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
+  WarningModel model({Warning::fromJson(w)});
   auto path = model.data(model.index(0, 0), Qt::UserRole + 5).toList();
   QVERIFY(path.isEmpty());
 }
 
 void WarningModelTest::testUpdateWarningsWithNewData() {
-  json w1 = R"({"floodAreaID": "1", "description": "Old", "severityLevel": 2})"_json;
-  WarningModel model({Warning::fromJson(w1)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w1;
+  std::string json1 = R"({"floodAreaID": "1", "description": "Old", "severityLevel": 2})";
+  auto error1 = parser.parse(json1).get(w1);
+  QVERIFY(error1 == 0U);
 
+  WarningModel model({Warning::fromJson(w1)});
   QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
 
-  json w2 = R"({"floodAreaID": "1", "description": "New", "severityLevel": 2})"_json;
+  simdjson::dom::element w2;
+  std::string json2 = R"({"floodAreaID": "1", "description": "New", "severityLevel": 2})";
+  auto error2 = parser.parse(json2).get(w2);
+  QVERIFY(error2 == 0U);
   model.updateWarnings({Warning::fromJson(w2)});
 
   QCOMPARE(model.rowCount(), 1);
@@ -159,9 +212,13 @@ void WarningModelTest::testUpdateWarningsWithNewData() {
 }
 
 void WarningModelTest::testUpdateWarningsWithIdenticalData() {
-  json w = R"({"floodAreaID": "1", "description": "Same", "severityLevel": 2})"_json;
-  WarningModel model({Warning::fromJson(w)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string jsonStr = R"({"floodAreaID": "1", "description": "Same", "severityLevel": 2})";
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
+  WarningModel model({Warning::fromJson(w)});
   QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
   QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
 
@@ -174,13 +231,23 @@ void WarningModelTest::testUpdateWarningsWithIdenticalData() {
 }
 
 void WarningModelTest::testUpdateWarningsWithDifferentSize() {
-  json w1 = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
-  WarningModel model({Warning::fromJson(w1)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w1;
+  std::string json1 = R"({"floodAreaID": "1", "severityLevel": 2})";
+  auto error1 = parser.parse(json1).get(w1);
+  QVERIFY(error1 == 0U);
 
+  WarningModel model({Warning::fromJson(w1)});
   QSignalSpy resetSpy(&model, &QAbstractItemModel::modelReset);
 
-  json w2 = R"({"floodAreaID": "2", "severityLevel": 1})"_json;
-  json w3 = R"({"floodAreaID": "3", "severityLevel": 3})"_json;
+  simdjson::dom::element w2;
+  simdjson::dom::element w3;
+  std::string json2 = R"({"floodAreaID": "2", "severityLevel": 1})";
+  std::string json3 = R"({"floodAreaID": "3", "severityLevel": 3})";
+  auto error2 = parser.parse(json2).get(w2);
+  QVERIFY(error2 == 0U);
+  auto error3 = parser.parse(json3).get(w3);
+  QVERIFY(error3 == 0U);
   model.updateWarnings({Warning::fromJson(w2), Warning::fromJson(w3)});
 
   QCOMPARE(model.rowCount(), 2);
@@ -196,9 +263,13 @@ void WarningModelTest::testCalculateNextUpdateMs() {
 }
 
 void WarningModelTest::testStartAutoUpdate() {
-  json w = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
-  WarningModel model({Warning::fromJson(w)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string jsonStr = R"({"floodAreaID": "1", "severityLevel": 2})";
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
+  WarningModel model({Warning::fromJson(w)});
   model.startAutoUpdate();
 
   auto* timer = model.findChild<QTimer*>();
@@ -209,15 +280,19 @@ void WarningModelTest::testStartAutoUpdate() {
 
   QVERIFY(timer->isActive());
   QVERIFY(timer->isSingleShot());
-
   model.stopAutoUpdate();
 }
 
 void WarningModelTest::testStopAutoUpdate() {
-  json w = R"({"floodAreaID": "1", "severityLevel": 2})"_json;
-  WarningModel model({Warning::fromJson(w)});
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string jsonStr = R"({"floodAreaID": "1", "severityLevel": 2})";
+  auto error = parser.parse(jsonStr).get(w);
+  QVERIFY(error == 0U);
 
+  WarningModel model({Warning::fromJson(w)});
   model.startAutoUpdate();
+
   auto* timer = model.findChild<QTimer*>();
   QVERIFY(timer->isActive());
 

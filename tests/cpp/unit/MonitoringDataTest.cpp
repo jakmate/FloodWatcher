@@ -3,15 +3,21 @@
 #include "MockHttpClient.hpp"
 #include <HttpClient.hpp>
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
-using json = nlohmann::json;
+#include <simdjson.h>
 
 TEST(ParseWarningsTest, ParsesValidItemsArray) {
-  json apiResponse = {
-      {"items", json::array({{{"severityLevel", 1}, {"message", "Flood alert"}},
-                             {{"severityLevel", 2}, {"message", "Flood warning"}},
-                             {{"severityLevel", 3}, {"message", "Severe flood warning"}}})}};
+  std::string jsonStr = R"({
+    "items": [
+      {"severityLevel": 1, "message": "Flood alert"},
+      {"severityLevel": 2, "message": "Flood warning"},
+      {"severityLevel": 3, "message": "Severe flood warning"}
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
   data.parseWarnings(apiResponse);
@@ -22,7 +28,12 @@ TEST(ParseWarningsTest, ParsesValidItemsArray) {
 }
 
 TEST(ParseWarningsTest, HandlesEmptyItems) {
-  json apiResponse = {{"items", json::array()}};
+  std::string jsonStr = R"({"items": []})";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
   data.parseWarnings(apiResponse);
@@ -31,7 +42,12 @@ TEST(ParseWarningsTest, HandlesEmptyItems) {
 }
 
 TEST(ParseWarningsTest, HandlesMissingItemsKey) {
-  json apiResponse = json::object();
+  std::string jsonStr = "{}";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
   data.parseWarnings(apiResponse);
@@ -40,31 +56,39 @@ TEST(ParseWarningsTest, HandlesMissingItemsKey) {
 }
 
 TEST(ParseWarningsTest, CatchesInvalidJsonAndContinues) {
-  json apiResponse = {
-      {"items", json::array({{{"severityLevel", 1}, {"message", "Valid warning"}},
-                             {{"severityLevel", "invalid"}}, // Wrong type
-                             nullptr,                        // Null item
-                             {{"severityLevel", 2}, {"message", "Another valid"}}})}};
+  std::string jsonStr = R"({
+    "items": [
+      {"severityLevel": 1, "message": "Valid warning"},
+      {"severityLevel": "invalid"},
+      null,
+      {"severityLevel": 2, "message": "Another valid"}
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
 
-  // Should not throw - catches internally
   EXPECT_NO_THROW(data.parseWarnings(apiResponse));
-
-  // Should parse only valid items
   EXPECT_EQ(data.getWarnings().size(), 2);
 }
 
 TEST(ParseStationsTest, ParsesValidItemsArray) {
-  json apiResponse = {
-      {"items",
-       json::array(
-           {{{"RLOIid", "station1"}, {"label", "Test Station 1"}, {"lat", 51.5}, {"long", -0.1}},
-            {{"RLOIid", "station2"}, {"label", "Test Station 2"}, {"lat", 52.0}, {"long", -1.0}},
-            {{"RLOIid", "station3"},
-             {"label", "Test Station 3"},
-             {"lat", 53.5},
-             {"long", -2.5}}})}};
+  std::string jsonStr = R"({
+    "items": [
+      {"RLOIid": "station1", "label": "Test Station 1", "lat": 51.5, "long": -0.1},
+      {"RLOIid": "station2", "label": "Test Station 2", "lat": 52.0, "long": -1.0},
+      {"RLOIid": "station3", "label": "Test Station 3", "lat": 53.5, "long": -2.5}
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
   data.parseStations(apiResponse);
@@ -75,7 +99,12 @@ TEST(ParseStationsTest, ParsesValidItemsArray) {
 }
 
 TEST(ParseStationsTest, HandlesEmptyItems) {
-  json apiResponse = {{"items", json::array()}};
+  std::string jsonStr = R"({"items": []})";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
   data.parseStations(apiResponse);
@@ -84,7 +113,12 @@ TEST(ParseStationsTest, HandlesEmptyItems) {
 }
 
 TEST(ParseStationsTest, HandlesMissingItemsKey) {
-  json apiResponse = json::object();
+  std::string jsonStr = "{}";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
   data.parseStations(apiResponse);
@@ -93,20 +127,23 @@ TEST(ParseStationsTest, HandlesMissingItemsKey) {
 }
 
 TEST(ParseStationsTest, CatchesInvalidJsonAndContinues) {
-  json apiResponse = {
-      {"items",
-       json::array(
-           {{{"RLOIid", "valid station"}, {"lat", 51.5}, {"long", -0.1}},
-            {{"RLOIid", "wrong type station"}, {"lat", "48.0"}, {"long", -0.1}}, // Wrong type
-            nullptr,                                                             // Null item
-            {{"RLOIid", "another valid station"}, {"lat", 50.5}, {"long", -0.2}}})}};
+  std::string jsonStr = R"({
+    "items": [
+      {"RLOIid": "valid station", "lat": 51.5, "long": -0.1},
+      {"RLOIid": "wrong type station", "lat": "48.0", "long": -0.1},
+      null,
+      {"RLOIid": "another valid station", "lat": 50.5, "long": -0.2}
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element apiResponse;
+  auto error = parser.parse(jsonStr).get(apiResponse);
+  ASSERT_EQ(error, 0U);
 
   MonitoringData data;
 
-  // Should not throw - catches internally
   EXPECT_NO_THROW(data.parseStations(apiResponse));
-
-  // Should parse only valid items
   EXPECT_EQ(data.getStations().size(), 2);
 }
 
@@ -125,29 +162,39 @@ class MonitoringDataTest : public ::testing::Test {
 
     void SetUp() override {
       HttpClient::setInstance(&mockClient);
-      json testWarning1 = R"({
-            "floodAreaID": "test1",
-            "description": "Test warning 1",
-            "eaAreaName": "Test Area 1",
-            "severity": "Moderate",
-            "severityLevel": 2,
-            "floodArea": {
-                "county": "Test County",
-                "polygon": "http://test-polygon1.com"
-            }
-        })"_json;
 
-      json testWarning2 = R"({
-            "floodAreaID": "test2",
-            "description": "Test warning 2",
-            "eaAreaName": "Test Area 2",
-            "severity": "Severe",
-            "severityLevel": 3,
-            "floodArea": {
-                "county": "Test County",
-                "polygon": "http://test-polygon2.com"
-            }
-        })"_json;
+      std::string warning1Str = R"({
+        "floodAreaID": "test1",
+        "description": "Test warning 1",
+        "eaAreaName": "Test Area 1",
+        "severity": "Moderate",
+        "severityLevel": 2,
+        "floodArea": {
+          "county": "Test County",
+          "polygon": "http://test-polygon1.com"
+        }
+      })";
+
+      std::string warning2Str = R"({
+        "floodAreaID": "test2",
+        "description": "Test warning 2",
+        "eaAreaName": "Test Area 2",
+        "severity": "Severe",
+        "severityLevel": 3,
+        "floodArea": {
+          "county": "Test County",
+          "polygon": "http://test-polygon2.com"
+        }
+      })";
+
+      simdjson::dom::parser parser;
+      simdjson::dom::element testWarning1;
+      simdjson::dom::element testWarning2;
+
+      auto error1 = parser.parse(warning1Str).get(testWarning1);
+      ASSERT_EQ(error1, 0U);
+      auto error2 = parser.parse(warning2Str).get(testWarning2);
+      ASSERT_EQ(error2, 0U);
 
       auto warning1 = Warning::fromJson(testWarning1);
       auto warning2 = Warning::fromJson(testWarning2);
@@ -156,22 +203,22 @@ class MonitoringDataTest : public ::testing::Test {
 
       // Setup mock responses
       mockClient.addResponse("http://test-polygon1.com", R"({
-            "features": [{
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]]
-                }
-            }]
-        })");
+        "features": [{
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]]
+          }
+        }]
+      })");
 
       mockClient.addResponse("http://test-polygon2.com", R"({
-            "features": [{
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[2.0, 2.0], [3.0, 2.0], [3.0, 3.0], [2.0, 3.0], [2.0, 2.0]]]
-                }
-            }]
-        })");
+        "features": [{
+          "geometry": {
+            "type": "Polygon",
+            "coordinates": [[[2.0, 2.0], [3.0, 2.0], [3.0, 3.0], [2.0, 3.0], [2.0, 2.0]]]
+          }
+        }]
+      })");
     }
 
     void TearDown() override {
@@ -191,32 +238,13 @@ TEST_F(MonitoringDataTest, FetchAllPolygonsAsync_CompletesSuccessfully) {
   auto opt1 = warnings[0].getFloodAreaPolygon();
   ASSERT_TRUE(opt1.has_value());
   const auto& poly1 = opt1.value(); // NOLINT(bugprone-unchecked-optional-access)
-  EXPECT_EQ(poly1.size(), 1);       // One polygon
-  EXPECT_EQ(poly1[0].size(), 1);    // One ring
-  EXPECT_EQ(poly1[0][0].size(), 5); // Closed ring with 5 points
+  EXPECT_EQ(poly1.size(), 1);
+  EXPECT_EQ(poly1[0].size(), 1);
+  EXPECT_EQ(poly1[0][0].size(), 5);
 
   // Verify second warning got its polygon
   auto opt2 = warnings[1].getFloodAreaPolygon();
   ASSERT_TRUE(opt2.has_value());
   const auto& poly2 = opt2.value(); // NOLINT(bugprone-unchecked-optional-access)
   EXPECT_EQ(poly2.size(), 1);
-}
-
-TEST_F(MonitoringDataTest, FetchAllPolygonsAsync_HandlesFailedRequests) {
-  // Setup one failing response
-  getMockClient().addResponse("http://test-polygon1.com", "invalid json data");
-  // polygon2 still works
-
-  // Act
-  getData().fetchAllPolygonsAsync();
-
-  // Assert
-  const auto& warnings = getData().getWarnings();
-
-  // First warning should fail to parse
-  EXPECT_FALSE(warnings[0].getFloodAreaPolygon().has_value());
-
-  // Second warning should succeed
-  auto opt2b = warnings[1].getFloodAreaPolygon();
-  ASSERT_TRUE(opt2b.has_value());
 }

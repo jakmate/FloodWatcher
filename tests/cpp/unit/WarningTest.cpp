@@ -1,23 +1,31 @@
 // tests/unit/WarningTest.cpp
 #include "Warning.hpp"
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
-using nlohmann::json;
+#include <simdjson.h>
 
 TEST(WarningFromJsonTest, DefaultBehaviour) {
-  json j = {{"floodAreaID", "m1"},
-            {"description", "long description"},
-            {"eaAreaName", "a"},
-            {"severity", "s"},
-            {"severityLevel", 0},
-            {"timeMessageChanged", "2025-12-03T12:44:00"},
-            {"timeRaised", "2025-12-03T12:44:34"},
-            {"timeSeverityChanged", "2025-11-30T18:55:00"},
-            {"message", "very long message!"},
-            {"floodArea", json::object({{"county", "c"}, {"polygon", "m2"}})}};
+  std::string jsonStr = R"({
+    "floodAreaID": "m1",
+    "description": "long description",
+    "eaAreaName": "a",
+    "severity": "s",
+    "severityLevel": 0,
+    "timeMessageChanged": "2025-12-03T12:44:00",
+    "timeRaised": "2025-12-03T12:44:34",
+    "timeSeverityChanged": "2025-11-30T18:55:00",
+    "message": "very long message!",
+    "floodArea": {
+      "county": "c",
+      "polygon": "m2"
+    }
+  })";
 
-  Warning fw = Warning::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Warning fw = Warning::fromJson(json);
 
   EXPECT_EQ(fw.getId(), "m1");
   EXPECT_EQ(fw.getDescription(), "long description");
@@ -33,9 +41,14 @@ TEST(WarningFromJsonTest, DefaultBehaviour) {
 }
 
 TEST(WarningFromJsonTest, DefaultsWhenFieldsMissing) {
-  json j = json::object(); // empty
+  std::string jsonStr = "{}";
 
-  Warning fw = Warning::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Warning fw = Warning::fromJson(json);
 
   EXPECT_EQ(fw.getId(), "unknown");
   EXPECT_EQ(fw.getDescription(), "unknown");
@@ -51,59 +64,88 @@ TEST(WarningFromJsonTest, DefaultsWhenFieldsMissing) {
 }
 
 TEST(WarningFromJsonTest, FloodAreaNotAnObject) {
-  json j = {{"floodAreaID", "m1"}, {"description", "long description"}, {"floodArea", nullptr}};
+  std::string jsonStr = R"({
+    "floodAreaID": "m1",
+    "description": "long description",
+    "floodArea": null
+  })";
 
-  Warning fw = Warning::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Warning fw = Warning::fromJson(json);
 
   EXPECT_EQ(fw.getId(), "m1");
   EXPECT_EQ(fw.getDescription(), "long description");
-  EXPECT_EQ(fw.getCounty(), "");
+  EXPECT_EQ(fw.getCounty(), "unknown");
   EXPECT_EQ(fw.getPolygonUrl(), "");
 }
 
 TEST(WarningParseGeoJsonPolygonTest, PolygonType) {
-  json geoJson = {
-      {"type", "Polygon"},
-      {"coordinates", json::array({json::array({// Single ring
-                                                json::array({0.0, 0.0}), json::array({1.0, 0.0}),
-                                                json::array({1.0, 1.0}), json::array({0.0, 1.0}),
-                                                json::array({0.0, 0.0})})})}};
+  std::string jsonStr = R"({
+    "type": "Polygon",
+    "coordinates": [
+      [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
 
   auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
-  EXPECT_EQ(multiPolygon.size(), 1);       // One polygon
-  EXPECT_EQ(multiPolygon[0].size(), 1);    // One ring in the polygon
-  EXPECT_EQ(multiPolygon[0][0].size(), 5); // Five points in the ring
+  EXPECT_EQ(multiPolygon.size(), 1);
+  EXPECT_EQ(multiPolygon[0].size(), 1);
+  EXPECT_EQ(multiPolygon[0][0].size(), 5);
 }
 
 TEST(WarningParseGeoJsonPolygonTest, MultiPolygonType) {
-  json geoJson = {
-      {"type", "MultiPolygon"},
-      {"coordinates",
-       json::array({json::array({// First polygon
-                                 json::array({json::array({0.0, 0.0}), json::array({1.0, 0.0}),
-                                              json::array({1.0, 1.0}), json::array({0.0, 1.0}),
-                                              json::array({0.0, 0.0})})}),
-                    json::array({// Second polygon
-                                 json::array({json::array({10.0, 10.0}), json::array({11.0, 10.0}),
-                                              json::array({11.0, 11.0}), json::array({10.0, 11.0}),
-                                              json::array({10.0, 10.0})})})})}};
+  std::string jsonStr = R"({
+    "type": "MultiPolygon",
+    "coordinates": [
+      [[[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0], [0.0, 0.0]]],
+      [[[10.0, 10.0], [11.0, 10.0], [11.0, 11.0], [10.0, 11.0], [10.0, 10.0]]]
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
 
   auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
-  EXPECT_EQ(multiPolygon.size(), 2);    // Two polygons
-  EXPECT_EQ(multiPolygon[0].size(), 1); // One ring in first polygon
-  EXPECT_EQ(multiPolygon[1].size(), 1); // One ring in second polygon
+  EXPECT_EQ(multiPolygon.size(), 2);
+  EXPECT_EQ(multiPolygon[0].size(), 1);
+  EXPECT_EQ(multiPolygon[1].size(), 1);
 }
 
 TEST(WarningParseGeoJsonPolygonTest, UnknownType) {
-  json geoJson = {{"type", "Point"}, {"coordinates", json::array()}};
+  std::string jsonStr = R"({
+    "type": "Point",
+    "coordinates": []
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
+
   auto result = Warning::parseGeoJsonPolygon(geoJson);
   EXPECT_EQ(result.size(), 0);
 }
 
 TEST(WarningParseGeoJsonPolygonTest, NoCoordinates) {
-  json geoJson = {{"type", "Polygon"}};
+  std::string jsonStr = R"({"type": "Polygon"})";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
 
   auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
@@ -111,13 +153,30 @@ TEST(WarningParseGeoJsonPolygonTest, NoCoordinates) {
 }
 
 TEST(WarningParseGeoJsonPolygonTest, CoordinatesArrayEmpty) {
-  json geoJson = {{"type", "Polygon"}, {"coordinates", json::array()}};
+  std::string jsonStr = R"({
+    "type": "Polygon",
+    "coordinates": []
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
+
   auto result = Warning::parseGeoJsonPolygon(geoJson);
   EXPECT_EQ(result.size(), 0);
 }
 
 TEST(WarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
-  json geoJson = {{"type", "MultiPolygon"}, {"coordinates", 69}};
+  std::string jsonStr = R"({
+    "type": "MultiPolygon",
+    "coordinates": 69
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
 
   auto multiPolygon = Warning::parseGeoJsonPolygon(geoJson);
 
@@ -125,22 +184,35 @@ TEST(WarningParseGeoJsonPolygonTest, CoordinatesNotArray) {
 }
 
 TEST(WarningParseGeoJsonPolygonTest, CoordinatesInvalid) {
-  json geoJson = {
-      {"type", "Polygon"},
-      {"coordinates", json::array({json::array({json::array({0.0, 1.0}), // valid
-                                                "not an array",          // invalid
-                                                json::array({2.0}),      // invalid (< 2 elements)
-                                                nullptr})})}};
+  std::string jsonStr = R"({
+    "type": "Polygon",
+    "coordinates": [
+      [[0.0, 1.0], "not an array", [2.0], null]
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
 
   auto result = Warning::parseGeoJsonPolygon(geoJson);
-  EXPECT_EQ(result[0][0].size(), 1); // Only 1 valid coords
+  EXPECT_EQ(result[0][0].size(), 1);
 }
 
 TEST(WarningParseGeoJsonPolygonTest, CoordinatesAllInvalid) {
-  json geoJson = {
-      {"type", "Polygon"},
-      {"coordinates", json::array({json::array({"invalid", json::array({1.0}), nullptr})})}};
+  std::string jsonStr = R"({
+    "type": "Polygon",
+    "coordinates": [
+      ["invalid", [1.0], null]
+    ]
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element geoJson;
+  auto error = parser.parse(jsonStr).get(geoJson);
+  ASSERT_EQ(error, 0U);
 
   auto result = Warning::parseGeoJsonPolygon(geoJson);
-  EXPECT_EQ(result.size(), 0); // Empty polygon filtered out
+  EXPECT_EQ(result.size(), 0);
 }

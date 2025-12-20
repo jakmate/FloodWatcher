@@ -1,6 +1,5 @@
 #include "Measure.hpp"
 #include "TypeUtils.hpp"
-#include <cmath>
 #include <iostream>
 
 Measure Measure::fromJson(const simdjson::dom::element& jsonObj) {
@@ -15,7 +14,7 @@ Measure Measure::fromJson(const simdjson::dom::element& jsonObj) {
 
   simdjson::dom::element reading;
   if (jsonObj["latestReading"].get(reading) == 0U) {
-    measure.latestReading = getDouble(reading, "value", NAN);
+    measure.latestReading = getDouble(reading, "value", 0.0);
   }
 
   return measure;

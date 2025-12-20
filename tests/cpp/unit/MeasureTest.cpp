@@ -1,20 +1,25 @@
 // tests/unit/MeasureTest.cpp
 #include "Measure.hpp"
+#include <cmath>
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
-using nlohmann::json;
 
 TEST(MeasureFromJsonTest, DefaultBehaviour) {
-  json j = {{"@id", "m1"},
-            {"parameter", "p"},
-            {"parameterName", "Param"},
-            {"period", 1.5},
-            {"qualifier", "Q"},
-            {"unitName", "unit"},
-            {"latestReading", json::object({{"value", 56.78}})}};
+  std::string jsonStr = R"({
+    "@id": "m1",
+    "parameter": "p",
+    "parameterName": "Param",
+    "period": 1.5,
+    "qualifier": "Q",
+    "unitName": "unit",
+    "latestReading": {"value": 56.78}
+  })";
 
-  Measure m = Measure::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Measure m = Measure::fromJson(json);
 
   EXPECT_EQ(m.getId(), "m1");
   EXPECT_EQ(m.getParameter(), "p");
@@ -26,9 +31,14 @@ TEST(MeasureFromJsonTest, DefaultBehaviour) {
 }
 
 TEST(MeasureFromJsonTest, DefaultsWhenFieldsMissing) {
-  json j = json::object(); // empty
+  std::string jsonStr = "{}";
 
-  Measure m = Measure::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Measure m = Measure::fromJson(json);
 
   EXPECT_EQ(m.getId(), "");
   EXPECT_EQ(m.getParameter(), "");
@@ -40,28 +50,51 @@ TEST(MeasureFromJsonTest, DefaultsWhenFieldsMissing) {
 }
 
 TEST(MeasureFromJsonTest, LatestReadingObjectWithoutValueLeavesDefault) {
-  json j = {{"@id", "m3"},
-            {"latestReading", json::object({{"timestamp", "2025-01-01T00:00:00Z"}})}};
+  std::string jsonStr = R"({
+    "@id": "m3",
+    "latestReading": {"timestamp": "2025-01-01T00:00:00Z"}
+  })";
 
-  Measure m = Measure::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Measure m = Measure::fromJson(json);
 
   EXPECT_EQ(m.getId(), "m3");
   EXPECT_DOUBLE_EQ(m.getLatestReading(), 0.0); // should remain default
 }
 
 TEST(MeasureFromJsonExtra, LatestReadingNullKeepsDefault) {
-  json j = {{"@id", "null"}, {"latestReading", nullptr}};
+  std::string jsonStr = R"({
+    "@id": "null",
+    "latestReading": null
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
 
   EXPECT_NO_THROW({
-    Measure m = Measure::fromJson(j);
+    Measure m = Measure::fromJson(json);
     EXPECT_EQ(m.getId(), "null");
     EXPECT_DOUBLE_EQ(m.getLatestReading(), 0.0); // should remain default
   });
 }
 
-TEST(MeasureFromJsonExtra, LatestReadingObjectWithNonNumericValueThrows) {
-  json j = {{"@id", "badvalue"}, {"latestReading", json::object({{"value", "not-a-number"}})}};
+TEST(MeasureFromJsonExtra, LatestReadingObjectWithNonNumericValue) {
+  std::string jsonStr = R"({
+    "@id": "badvalue",
+    "latestReading": {"value": "not-a-number"}
+  })";
 
-  // fromJson calls get<double>() here and will throw.
-  EXPECT_THROW({ Measure::fromJson(j); }, nlohmann::json::type_error);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  // Should throw because value is not a number
+  EXPECT_THROW(Measure::fromJson(json), std::runtime_error);
 }
