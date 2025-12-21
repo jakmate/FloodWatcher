@@ -33,7 +33,7 @@ int main(int argc, char* argv[]) {
 
     auto warningsFuture = std::async(std::launch::async, []() {
       return HttpClient::getInstance().fetchUrl(
-          "https://environment.data.gov.uk/flood-monitoring/id/floods?min-severity=3");
+          "https://environment.data.gov.uk/flood-monitoring/id/floods");
     });
 
     auto stationsResponse = stationsFuture.get();

@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Controls.Basic
 
 Rectangle {
     id: root
@@ -53,11 +54,16 @@ Rectangle {
             contentWidth: width
             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
             ScrollBar.vertical.policy: ScrollBar.AsNeeded
+            Component.onCompleted: {
+                if (ScrollBar.vertical) {
+                    ScrollBar.vertical.contentItem.color = "#ffffffff";
+                }
+            }
 
             Column {
                 id: warningColumn
 
-                width: parent.width - 25
+                width: parent.width - 20
                 spacing: 12
 
                 Repeater {
