@@ -2,6 +2,7 @@
 #include "StationModel.hpp"
 #include "Station.hpp"
 #include <QTest>
+#include <simdjson.h>
 
 class StationModelTest : public QObject {
     Q_OBJECT
@@ -17,8 +18,19 @@ class StationModelTest : public QObject {
 
 void StationModelTest::testRowCount() {
   std::vector<Station> stations;
-  json s1 = R"({"label": "1", "RLOIid": "2321"})"_json;
-  json s2 = R"({"label": "2", "RLOIid": "3221"})"_json;
+
+  std::string json1 = R"({"label": "1", "RLOIid": "2321"})";
+  std::string json2 = R"({"label": "2", "RLOIid": "3221"})";
+
+  simdjson::dom::parser parser1;
+  simdjson::dom::parser parser2;
+  simdjson::dom::element s1;
+  simdjson::dom::element s2;
+  auto error1 = parser1.parse(json1).get(s1);
+  QVERIFY(error1 == 0U);
+  auto error2 = parser2.parse(json2).get(s2);
+  QVERIFY(error2 == 0U);
+
   stations.push_back(Station::fromJson(s1));
   stations.push_back(Station::fromJson(s2));
 
@@ -27,19 +39,24 @@ void StationModelTest::testRowCount() {
 }
 
 void StationModelTest::testRowCountWithValidParent() {
-  json s = R"({"label": "1", "RLOIid": "2321"})"_json;
+  std::string jsonStr = R"({"label": "1", "RLOIid": "2321"})";
+  simdjson::dom::parser parser;
+  simdjson::dom::element s;
+  auto error = parser.parse(jsonStr).get(s);
+  QVERIFY(error == 0U);
+
   StationModel model({Station::fromJson(s)});
 
   // Create a valid parent index
   QModelIndex validParent = model.index(0, 0);
 
-  // Should return 0 for valid parent (flat list model)
+  // Should return 0 for valid parent
   QCOMPARE(model.rowCount(validParent), 0);
 }
 
 // NOLINTBEGIN(readability-function-cognitive-complexity)
 void StationModelTest::testDataReturnsCorrectValues() {
-  json s = R"({
+  std::string stationJson = R"({
     "label": "L1",
     "town": "Ttown",
     "lat": 51.5074,
@@ -49,9 +66,9 @@ void StationModelTest::testDataReturnsCorrectValues() {
     "dateOpened": "2020-01-01",
     "riverName": "River X",
     "notation": "NT-1"
-  })"_json;
+  })";
 
-  json mJson = R"({
+  std::string measureJson = R"({
     "parameter": "water_level",
     "parameterName": "Water level",
     "qualifier": "above",
@@ -59,7 +76,16 @@ void StationModelTest::testDataReturnsCorrectValues() {
       "value": 3.14
     },
     "unitName": "m"
-  })"_json;
+  })";
+
+  simdjson::dom::parser parser1;
+  simdjson::dom::parser parser2;
+  simdjson::dom::element s;
+  simdjson::dom::element mJson;
+  auto error1 = parser1.parse(stationJson).get(s);
+  QVERIFY(error1 == 0U);
+  auto error2 = parser2.parse(measureJson).get(mJson);
+  QVERIFY(error2 == 0U);
 
   Station station = Station::fromJson(s);
   Measure measure = Measure::fromJson(mJson);
@@ -80,7 +106,6 @@ void StationModelTest::testDataReturnsCorrectValues() {
   QCOMPARE(model.data(idx, Qt::UserRole + 8).toString(), QString("River X"));
   QCOMPARE(model.data(idx, Qt::UserRole + 9).toString(), QString("NT-1"));
 
-  // Check measures role returns a QVariantList with a QVariantMap inside
   QVariant measuresVar = model.data(idx, Qt::UserRole + 10);
   QVERIFY(measuresVar.isValid());
   QVariantList measuresList = measuresVar.toList();
@@ -97,15 +122,18 @@ void StationModelTest::testDataReturnsCorrectValues() {
 
 void StationModelTest::testDataReturnsEmptyForInvalidIndex() {
   StationModel model({});
-
   QVERIFY(!model.data(QModelIndex(), Qt::UserRole).isValid());
   QVERIFY(!model.data(model.index(10, 0), Qt::UserRole).isValid());
 }
 
 void StationModelTest::testDataReturnsEmptyForUnknownRole() {
-  json s = R"({"label": "test", "RLOIid": "1234"})"_json;
-  StationModel model({Station::fromJson(s)});
+  std::string jsonStr = R"({"label": "test", "RLOIid": "1234"})";
+  simdjson::dom::parser parser;
+  simdjson::dom::element s;
+  auto error = parser.parse(jsonStr).get(s);
+  QVERIFY(error == 0U);
 
+  StationModel model({Station::fromJson(s)});
   QModelIndex idx = model.index(0, 0);
 
   // Test with a role that's not in WarningRoles enum

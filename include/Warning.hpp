@@ -1,15 +1,13 @@
 #pragma once
 #include "GeometryTypes.hpp"
-#include <nlohmann/json.hpp>
 #include <optional>
+#include <simdjson.h>
 #include <string>
-
-using json = nlohmann::json;
 
 class Warning {
   public:
-    static Warning fromJson(const json& jsonObj);
-    static MultiPolygon parseGeoJsonPolygon(const json& geoJson);
+    static Warning fromJson(const simdjson::dom::element& jsonObj);
+    static MultiPolygon parseGeoJsonPolygon(const simdjson::dom::element& geoJson);
 
     const std::string& getId() const {
       return id;
@@ -66,6 +64,6 @@ class Warning {
     std::string polygonUrl;
     std::optional<MultiPolygon> floodAreaPolygon;
 
-    static LinearRing parseLinearRing(const json& ringJson);
-    static MyPolygon parsePolygon(const json& polygonJson);
+    static LinearRing parseLinearRing(const simdjson::dom::array& ringJson);
+    static MyPolygon parsePolygon(const simdjson::dom::array& polygonJson);
 };

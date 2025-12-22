@@ -1,18 +1,3 @@
-# Conan Issue:
-### using msvc
-"Qt6::QGeoPositionInfoSourceFactoryGeoclue2")
-CMake Error at build/Release/generators/cmakedeps_macros.cmake:81 (message):
-  Library 'qtposition_geoclue2' not found in package.  If
-  'qtposition_geoclue2' is a system library, declare it with
-  'cpp_info.system_libs' property
-Call Stack (most recent call first):
-  build/Release/generators/Qt6-Target-release.cmake:23 (conan_package_library_targets)
-  build/Release/generators/Qt6Targets.cmake:124 (include)
-  build/Release/generators/Qt6Config.cmake:16 (include)
-  CMakeLists.txt:19 (find_package)
-### using gcc with ucrt
-does not compile fully...
-
 # FloodWatcher
 
 [![Lint & Format](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml/badge.svg)](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml)
@@ -28,18 +13,18 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 ## To Do
 
-- Settle on a package manager...
 - Improve qt (create clusters with stations?)
-- Fix builds
-- Improve profiling (hard to read)
+- Fix builds (Do once package manager sorted)
+- Consider curl multi for polygons (was slower but try again)
 - gtest vs Qt Test (or keep both use depending on file)
+- API doc lies and there is an exception in northing and easting with double values not int
 
 ## Requirements
 
 - C++17 or later
 - CMake 3.15+
 - libcurl
-- nlohmann/json
+- simdjson
 - Qt 6 (with Core, Qml, Gui, and Positioning modules)
 
 ## Building
@@ -76,8 +61,26 @@ cmake --build build
 cd build
 ./flood_monitor.exe
 gprof flood_monitor.exe gmon.out > analysis.txt
+# or for ease of read
+gprof flood_monitor.exe gmon.out --flat-profile | head -30
 ```
 
 ## API Reference
 
 Data source: UK Environment Agency Flood Monitoring API [[1](https://environment.data.gov.uk/flood-monitoring/doc/reference)]
+
+
+## When using Conan for Qt:
+### using msvc
+"Qt6::QGeoPositionInfoSourceFactoryGeoclue2")
+CMake Error at build/Release/generators/cmakedeps_macros.cmake:81 (message):
+  Library 'qtposition_geoclue2' not found in package.  If
+  'qtposition_geoclue2' is a system library, declare it with
+  'cpp_info.system_libs' property
+Call Stack (most recent call first):
+  build/Release/generators/Qt6-Target-release.cmake:23 (conan_package_library_targets)
+  build/Release/generators/Qt6Targets.cmake:124 (include)
+  build/Release/generators/Qt6Config.cmake:16 (include)
+  CMakeLists.txt:19 (find_package)
+### using gcc with ucrt
+does not compile fully...

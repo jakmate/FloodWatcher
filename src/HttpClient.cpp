@@ -7,7 +7,8 @@ bool HttpClient::curlInitialized = false;
 std::once_flag HttpClient::curlInitFlag;
 IHttpClient* HttpClient::testInstance = nullptr;
 
-HttpClient::HttpClient(size_t poolSize) : poolSize_(poolSize), createdHandles_(0) {
+HttpClient::HttpClient(size_t poolSize)
+    : poolSize_(poolSize), createdHandles_(0), inUseHandles_(0) {
   std::call_once(curlInitFlag, []() {
     curl_global_init(CURL_GLOBAL_ALL);
     curlInitialized = true;
@@ -16,7 +17,11 @@ HttpClient::HttpClient(size_t poolSize) : poolSize_(poolSize), createdHandles_(0
 }
 
 HttpClient::~HttpClient() {
-  std::scoped_lock<std::mutex> lock(poolMutex_);
+  std::unique_lock<std::mutex> lock(poolMutex_);
+
+  // Wait for all handles to be returned
+  poolCond_.wait(lock, [this]() { return inUseHandles_ == 0; });
+
   for (CURL* handle : availableHandles_) {
     curl_easy_cleanup(handle);
   }
@@ -50,49 +55,43 @@ void HttpClient::applyPersistentOptions(CURL* curl) {
   curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 10L); // 10 second connect timeout
   curl_easy_setopt(curl, CURLOPT_TCP_KEEPALIVE, 1L);   // Enable keep-alive
   curl_easy_setopt(curl, CURLOPT_ACCEPT_ENCODING, ""); // Enable gzip/deflate
-  curl_easy_setopt(curl, CURLOPT_MAXCONNECTS, 5L);
   curl_easy_setopt(curl, CURLOPT_TCP_KEEPIDLE, 60L);
   curl_easy_setopt(curl, CURLOPT_TCP_KEEPINTVL, 60L);
   curl_easy_setopt(curl, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_2_0);
 
   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 1L);
   curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 2L);
-  #ifdef _WIN32
+#ifdef _WIN32
   // Use Windows native certificate store
   curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
-  #endif
+#endif
 }
 
 HttpClient::CurlHandle HttpClient::acquireHandle() {
-  std::scoped_lock<std::mutex> lock(poolMutex_);
+  std::unique_lock<std::mutex> lock(poolMutex_);
 
-  // Try to get from pool first
+  // Wait until either there's an available handle in the pool, OR
+  // We can create a new handle under pool limit
+  poolCond_.wait(lock,
+                 [this]() { return !availableHandles_.empty() || createdHandles_ < poolSize_; });
+
+  // If there's an available handle, use it
+  CURL* handle = nullptr;
   if (!availableHandles_.empty()) {
-    CURL* handle = availableHandles_.front();
+    handle = availableHandles_.front();
     availableHandles_.pop_front();
-    return {handle, this};
-    ;
-  }
-
-  // Create new handle if under pool limit
-  if (createdHandles_ < poolSize_) {
-    CURL* handle = curl_easy_init();
+  } else {
+    // Otherwise, create a new handle
+    handle = curl_easy_init();
     if (handle == nullptr) {
       std::cerr << "Failed to initialize curl handle\n";
       return {nullptr, this};
     }
     applyPersistentOptions(handle);
     createdHandles_++;
-    return {handle, this};
   }
-
-  // Pool exhausted, wait for a handle to be returned
-  // For now, create a temporary handle (could add waiting logic)
-  CURL* handle = curl_easy_init();
-  if (handle != nullptr) {
-    applyPersistentOptions(handle);
-  }
-  return {handle, nullptr}; // nullptr client = won't return to pool
+  inUseHandles_++;
+  return {handle, this};
 }
 
 void HttpClient::returnHandle(CURL* handle) {
@@ -100,14 +99,10 @@ void HttpClient::returnHandle(CURL* handle) {
     return;
   }
 
-  std::scoped_lock<std::mutex> lock(poolMutex_);
-
-  // Return to pool if not over capacity
-  if (availableHandles_.size() < poolSize_) {
-    availableHandles_.push_back(handle);
-  } else {
-    curl_easy_cleanup(handle);
-  }
+  std::unique_lock<std::mutex> lock(poolMutex_);
+  availableHandles_.push_back(handle); // Return to pool
+  inUseHandles_--;                     // Decrement in-use count
+  poolCond_.notify_one();              // Notify one waiting thread that a handle is available
 }
 
 size_t HttpClient::writeCallback(void* contents, size_t size, size_t nmemb, std::string* userp) {

@@ -3,3 +3,5 @@
 /.venv
 qml/*.qml.bak
 CMakeUserPresets.json
+/6.10.1
+aqtinstall.log

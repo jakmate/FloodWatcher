@@ -1,17 +1,30 @@
 // tests/unit/StationTest.cpp
 #include "Station.hpp"
 #include <gtest/gtest.h>
-#include <nlohmann/json.hpp>
-
-using nlohmann::json;
+#include <simdjson.h>
 
 TEST(StationFromJsonTest, DefaultBehaviour) {
-  json j = {{"RLOIid", "id"},     {"catchmentName", "name"}, {"dateOpened", "date"},
-            {"label", "l"},       {"lat", 51.874767},        {"long", -1.740083},
-            {"northing", 219610}, {"easting", 528000},       {"notation", "n"},
-            {"town", "t"},        {"riverName", "r"},        {"status", "url/statusActive"}};
+  std::string jsonStr = R"({
+    "RLOIid": "id",
+    "catchmentName": "name",
+    "dateOpened": "date",
+    "label": "l",
+    "lat": 51.874767,
+    "long": -1.740083,
+    "northing": 219610,
+    "easting": 528000,
+    "notation": "n",
+    "town": "t",
+    "riverName": "r",
+    "status": "url/statusActive"
+  })";
 
-  Station m = Station::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Station m = Station::fromJson(json);
 
   EXPECT_EQ(m.getRLOIid(), "id");
   EXPECT_EQ(m.getCatchmentName(), "name");
@@ -27,9 +40,14 @@ TEST(StationFromJsonTest, DefaultBehaviour) {
 }
 
 TEST(StationFromJsonTest, DefaultsWhenFieldsMissing) {
-  json j = json::object(); // empty
+  std::string jsonStr = "{}";
 
-  Station m = Station::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Station m = Station::fromJson(json);
 
   EXPECT_EQ(m.getRLOIid(), "unknown");
   EXPECT_EQ(m.getCatchmentName(), "unknown");
@@ -37,26 +55,33 @@ TEST(StationFromJsonTest, DefaultsWhenFieldsMissing) {
   EXPECT_EQ(m.getLabel(), "unknown");
   EXPECT_EQ(m.getLat(), 0.0);
   EXPECT_EQ(m.getLon(), 0.0);
-  EXPECT_EQ(m.getNorthing(), 0L);
-  EXPECT_EQ(m.getEasting(), 0L);
+  EXPECT_EQ(m.getNorthing(), 0);
+  EXPECT_EQ(m.getEasting(), 0);
   EXPECT_EQ(m.getNotation(), "unknown");
   EXPECT_EQ(m.getTown(), "unknown");
   EXPECT_EQ(m.getRiverName(), "unknown");
 }
 
 TEST(StationFromJsonTest, HandlesArrayFieldsWithActiveStatus) {
-  json j = {{"RLOIid", json::array({"10427", "9154"})},
-            {"catchmentName", json::array({"Loddon", "London"})},
-            {"dateOpened", json::array({"date", "date2"})},
-            {"label", json::array({"Erith Deep Wharf", "Erith Deep Wharf TL"})},
-            {"lat", json::array({51.5, 52.5})},
-            {"long", json::array({-1.5, -2.5})},
-            {"northing", json::array({100000, 200000})},
-            {"easting", json::array({300000, 400000})},
-            {"status", json::array({"url/statusActive", "url/statusSuspended"})},
-            {"notation", "0018"}};
+  std::string jsonStr = R"({
+    "RLOIid": ["10427", "9154"],
+    "catchmentName": ["Loddon", "London"],
+    "dateOpened": ["date", "date2"],
+    "label": ["Erith Deep Wharf", "Erith Deep Wharf TL"],
+    "lat": [51.5, 52.5],
+    "long": [-1.5, -2.5],
+    "northing": [100000, 200000],
+    "easting": [300000, 400000],
+    "status": ["url/statusActive", "url/statusSuspended"],
+    "notation": "0018"
+  })";
 
-  Station s = Station::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Station s = Station::fromJson(json);
 
   // Should pick first element (index 0) matching statusActive
   EXPECT_EQ(s.getRLOIid(), "10427");
@@ -71,10 +96,17 @@ TEST(StationFromJsonTest, HandlesArrayFieldsWithActiveStatus) {
 }
 
 TEST(StationFromJsonTest, HandlesArrayFieldsWithoutStatus) {
-  json j = {{"RLOIid", json::array({"10427", "9154"})},
-            {"catchmentName", json::array({"Loddon", "London"})}};
+  std::string jsonStr = R"({
+    "RLOIid": ["10427", "9154"],
+    "catchmentName": ["Loddon", "London"]
+  })";
 
-  Station s = Station::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Station s = Station::fromJson(json);
 
   // Should fallback to first element when no status array
   EXPECT_EQ(s.getRLOIid(), "10427");
@@ -82,19 +114,34 @@ TEST(StationFromJsonTest, HandlesArrayFieldsWithoutStatus) {
 }
 
 TEST(StationFromJsonTest, HandlesArrayFieldsWithNoActiveStatus) {
-  json j = {{"RLOIid", json::array({"10427", "9154"})},
-            {"status", json::array({"url/statusSuspended", "url/statusInactive"})}};
+  std::string jsonStr = R"({
+    "RLOIid": ["10427", "9154"],
+    "status": ["url/statusSuspended", "url/statusInactive"]
+  })";
 
-  Station s = Station::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Station s = Station::fromJson(json);
 
   // Should fallback to first element when no statusActive found
   EXPECT_EQ(s.getRLOIid(), "10427");
 }
 
 TEST(StationFromJsonTest, HandlesStatusNotArray) {
-  json j = {{"RLOIid", json::array({"10427", "9154"})}, {"status", "url/statusActive"}};
+  std::string jsonStr = R"({
+    "RLOIid": ["10427", "9154"],
+    "status": "url/statusActive"
+  })";
 
-  Station s = Station::fromJson(j);
+  simdjson::dom::parser parser;
+  simdjson::dom::element json;
+  auto error = parser.parse(jsonStr).get(json);
+  ASSERT_EQ(error, 0U);
+
+  Station s = Station::fromJson(json);
 
   EXPECT_EQ(s.getRLOIid(), "10427"); // Fallback to first
 }

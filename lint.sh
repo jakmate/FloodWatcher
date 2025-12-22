@@ -1,6 +1,10 @@
 #!/bin/bash
 
-set -e  # Exit on error
+set -e
+
+# Use local Qt installation
+QT_DIR="F:/Coding/Portfolio/FloodWatcher/6.10.1/msvc2022_64"
+export PATH="$QT_DIR/bin:$PATH"
 
 echo "Running qmllint..."
 qmllint-qt6 qml/main.qml qml/MapArea.qml qml/StationPanel.qml qml/WarningsPanel.qml

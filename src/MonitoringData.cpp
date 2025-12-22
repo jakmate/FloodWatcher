@@ -1,12 +1,19 @@
 #include "MonitoringData.hpp"
 #include <HttpClient.hpp>
+#include <ThreadPool.hpp>
 #include <future>
 #include <iostream>
 #include <vector>
 
-void MonitoringData::parseWarnings(const json& apiResponse) {
-  if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
-    for (const auto& item : apiResponse["items"]) {
+void MonitoringData::parseWarnings(const simdjson::dom::element& apiResponse) {
+  simdjson::dom::array items;
+  auto error = apiResponse["items"].get(items);
+  if (error == 0U) {
+    for (auto item : items) {
+      if (item.is_null()) {
+        continue;
+      }
+
       try {
         warnings.push_back(Warning::fromJson(item));
       } catch (const std::exception& e) {
@@ -16,9 +23,15 @@ void MonitoringData::parseWarnings(const json& apiResponse) {
   }
 }
 
-void MonitoringData::parseStations(const json& apiResponse) {
-  if (apiResponse.contains("items") && apiResponse["items"].is_array()) {
-    for (const auto& item : apiResponse["items"]) {
+void MonitoringData::parseStations(const simdjson::dom::element& apiResponse) {
+  simdjson::dom::array items;
+  auto error = apiResponse["items"].get(items);
+  if (error == 0U) {
+    for (auto item : items) {
+      if (item.is_null()) {
+        continue;
+      }
+
       try {
         stations.push_back(Station::fromJson(item));
       } catch (const std::exception& e) {
@@ -29,33 +42,41 @@ void MonitoringData::parseStations(const json& apiResponse) {
 }
 
 void MonitoringData::fetchAllPolygonsAsync() {
-  std::vector<std::future<void>> futures;
-  std::mutex coutMutex; // For thread-safe logging
+  ThreadPool pool(10);
 
   for (auto& warning : warnings) {
     if (!warning.getPolygonUrl().empty()) {
-      futures.push_back(std::async(std::launch::async, [this, &warning, &coutMutex]() {
-        auto polygonData = HttpClient::getInstance().fetchUrl(warning.getPolygonUrl());
-        if (polygonData) {
-          try {
-            json polygonJson = json::parse(*polygonData);
-            warning.setFloodAreaPolygon(
-                Warning::parseGeoJsonPolygon(polygonJson["features"][0]["geometry"]));
-          } catch (const std::exception& e) {
-            std::scoped_lock<std::mutex> lock(coutMutex);
-            std::cerr << "Error parsing polygon from URL " << warning.getPolygonUrl() << ": "
-                      << e.what() << '\n';
-          }
-        } else {
-          std::scoped_lock<std::mutex> lock(coutMutex);
-          std::cerr << "Failed to fetch polygon from URL: " << warning.getPolygonUrl() << '\n';
+      std::string url = warning.getPolygonUrl();
+      Warning* warningPtr = &warning;
+      pool.enqueue([this, url, warningPtr]() {
+        auto polygonData = HttpClient::getInstance().fetchUrl(url);
+        if (!polygonData) {
+          std::cerr << "Failed to fetch polygon from URL: " << url << '\n';
+          return;
         }
-      }));
-    }
-  }
 
-  // Wait for all async operations to complete
-  for (auto& future : futures) {
-    future.get();
+        try {
+          simdjson::dom::parser parser;
+          simdjson::dom::element polygonJson;
+          auto error = parser.parse(*polygonData).get(polygonJson);
+          if (error != 0U) {
+            std::cerr << "Error parsing polygon from URL " << url << ": " << error << '\n';
+            return;
+          }
+
+          // Extract geometry element properly
+          simdjson::dom::element geometry;
+          error = polygonJson["features"].at(0)["geometry"].get(geometry);
+          if (error != 0U) {
+            std::cerr << "Error getting geometry from polygon\n";
+            return;
+          }
+
+          warningPtr->setFloodAreaPolygon(Warning::parseGeoJsonPolygon(geometry));
+        } catch (const std::exception& e) {
+          std::cerr << "Error parsing polygon from URL " << url << ": " << e.what() << '\n';
+        }
+      });
+    }
   }
 }

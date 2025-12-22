@@ -1,17 +1,15 @@
 #pragma once
 #include "Station.hpp"
 #include "Warning.hpp"
-#include <nlohmann/json.hpp>
+#include <simdjson.h>
 #include <vector>
-
-using json = nlohmann::json;
 
 class MonitoringData {
     friend class MonitoringDataTest;
 
   public:
-    void parseWarnings(const json& apiResponse);
-    void parseStations(const json& apiResponse);
+    void parseWarnings(const simdjson::dom::element& apiResponse);
+    void parseStations(const simdjson::dom::element& apiResponse);
     void fetchAllPolygonsAsync();
 
     const std::vector<Warning>& getWarnings() const {

@@ -1,20 +1,20 @@
 #include "Measure.hpp"
+#include "TypeUtils.hpp"
 #include <iostream>
 
-Measure Measure::fromJson(const json& jsonObj) {
+Measure Measure::fromJson(const simdjson::dom::element& jsonObj) {
   Measure measure;
-  measure.id = jsonObj.value("@id", "");
-  measure.parameter = jsonObj.value("parameter", "");
-  measure.parameterName = jsonObj.value("parameterName", "");
-  measure.period = jsonObj.value("period", 0.0);
-  measure.qualifier = jsonObj.value("qualifier", "");
-  measure.unitName = jsonObj.value("unitName", "");
 
-  if (jsonObj.contains("latestReading")) {
-    const auto& reading = jsonObj["latestReading"];
-    if (reading.is_object() && reading.contains("value")) {
-      measure.latestReading = reading["value"].get<double>();
-    }
+  measure.id = getString(jsonObj, "@id", "");
+  measure.parameter = getString(jsonObj, "parameter", "");
+  measure.parameterName = getString(jsonObj, "parameterName", "");
+  measure.qualifier = getString(jsonObj, "qualifier", "");
+  measure.unitName = getString(jsonObj, "unitName", "");
+  measure.period = getDouble(jsonObj, "period", 0.0);
+
+  simdjson::dom::element reading;
+  if (jsonObj["latestReading"].get(reading) == 0U) {
+    measure.latestReading = getDouble(reading, "value", 0.0);
   }
 
   return measure;

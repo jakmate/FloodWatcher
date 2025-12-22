@@ -3,8 +3,7 @@ name: Lint & Format
 on:
   push:
     branches:
-      - main
-      - "feature/**"
+      - "**"
   pull_request:
     branches:
       - main
@@ -21,32 +20,33 @@ jobs:
         with:
           python-version: "3.x"
 
-      - name: Install aqtinstall
+      - name: Install conan and aqtinstall
         run: |
-          pip install aqtinstall
+          pip install conan aqtinstall
 
       - name: Install Qt 6.10.0
         run: |
           aqt install-qt linux desktop 6.10.0 linux_gcc_64 --modules qtlocation qtpositioning --archives icu qtbase qtdeclarative
-
-      - name: Set Qt environment
-        run: |
           echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/6.10.0/gcc_64" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev clang-format clang-tidy \
-            cmake build-essential nlohmann-json3-dev ninja-build \
-            libgl1-mesa-dev libglu1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
+          sudo apt-get install -y clang-format clang-tidy cmake ninja-build \
+            libgl1-mesa-dev libxkbcommon-dev
+
+      - name: Install Conan dependencies
+        run: |
+          conan profile detect
+          conan install . --build=missing
 
       - name: Generate compile_commands.json
         run: |
-          cmake -GNinja -B build -DBUILD_TESTS=ON
+          cmake --preset conan-qt -GNinja -DBUILD_TESTS=ON
 
       - name: Build to generate moc files
         run: |
-          cmake --build build --target qttest_station_model qttest_warning_model
+          cmake --build --preset conan-release-qt --target qttest_station_model qttest_warning_model
 
       - name: Run clang-format check
         run: |

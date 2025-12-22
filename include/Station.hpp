@@ -1,14 +1,12 @@
 #pragma once
 #include "Measure.hpp"
-#include <nlohmann/json.hpp>
+#include <simdjson.h>
 #include <string>
 #include <vector>
 
-using json = nlohmann::json;
-
 class Station {
   public:
-    static Station fromJson(const json& jsonObj);
+    static Station fromJson(const simdjson::dom::element& jsonObj);
 
     const std::string& getRLOIid() const {
       return RLOIid;
@@ -28,10 +26,10 @@ class Station {
     double getLon() const {
       return lon;
     }
-    long getNorthing() const {
+    int64_t getNorthing() const {
       return northing;
     }
-    long getEasting() const {
+    int64_t getEasting() const {
       return easting;
     }
     const std::string& getNotation() const {
@@ -61,8 +59,8 @@ class Station {
     std::string label;
     double lat = 0.0;
     double lon = 0.0;
-    long northing = 0;
-    long easting = 0;
+    int64_t northing = 0;
+    int64_t easting = 0;
     std::string notation;
     std::string town;
     std::string riverName;
