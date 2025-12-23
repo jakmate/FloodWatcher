@@ -1,6 +1,9 @@
 // tests/unit/StationModelTest.cpp
 #include "StationModel.hpp"
+#include "MockHttpClient.hpp"
 #include "Station.hpp"
+#include <HttpClient.hpp>
+#include <QSignalSpy>
 #include <QTest>
 #include <simdjson.h>
 
@@ -14,6 +17,10 @@ class StationModelTest : public QObject {
     static void testDataReturnsEmptyForInvalidIndex();
     static void testDataReturnsEmptyForUnknownRole();
     static void testRoleNames();
+    static void testFetchMeasuresSuccess();
+    static void testFetchMeasuresInvalidIndex();
+    static void testFetchMeasuresHttpFailure();
+    static void testFetchMeasuresInvalidJson();
 };
 
 void StationModelTest::testRowCount() {
@@ -158,6 +165,127 @@ void StationModelTest::testRoleNames() {
   QCOMPARE(roles[Qt::UserRole + 10], QByteArray("measures"));
 }
 // NOLINTEND(readability-function-cognitive-complexity)
+
+void StationModelTest::testFetchMeasuresSuccess() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  std::string measuresResponse = R"({
+    "items": [
+      {
+        "parameter": "level",
+        "parameterName": "Water Level",
+        "qualifier": "Stage",
+        "latestReading": {"value": 1.5},
+        "unitName": "m"
+      },
+      {
+        "parameter": "flow",
+        "parameterName": "Flow",
+        "qualifier": "Upstream",
+        "latestReading": {"value": 2.3},
+        "unitName": "m3/s"
+      }
+    ]
+  })";
+
+  mockClient.addResponse(
+      "https://environment.data.gov.uk/flood-monitoring/id/stations/test-station/measures",
+      measuresResponse);
+
+  std::string stationJson = R"({
+    "label": "Test Station",
+    "RLOIid": "123",
+    "notation": "test-station"
+  })";
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element s;
+  auto error = parser.parse(stationJson).get(s);
+  QVERIFY(error == 0U);
+
+  StationModel model({Station::fromJson(s)});
+  QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+
+  bool result = model.fetchMeasures(0);
+
+  QVERIFY(result);
+  QCOMPARE(dataChangedSpy.count(), 1);
+
+  QVariant measuresVar = model.data(model.index(0, 0), Qt::UserRole + 10);
+  QVariantList measuresList = measuresVar.toList();
+  QCOMPARE(measuresList.size(), 2);
+  QCOMPARE(measuresList[0].toMap()["parameter"].toString(), QString("level"));
+  QCOMPARE(measuresList[1].toMap()["parameter"].toString(), QString("flow"));
+
+  HttpClient::setInstance(nullptr);
+}
+
+void StationModelTest::testFetchMeasuresInvalidIndex() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  std::string stationJson = R"({"label": "Test", "RLOIid": "123", "notation": "test"})";
+  simdjson::dom::parser parser;
+  simdjson::dom::element s;
+  auto error = parser.parse(stationJson).get(s);
+  QVERIFY(error == 0U);
+
+  StationModel model({Station::fromJson(s)});
+
+  QVERIFY(!model.fetchMeasures(-1));
+  QVERIFY(!model.fetchMeasures(10));
+
+  HttpClient::setInstance(nullptr);
+}
+
+void StationModelTest::testFetchMeasuresHttpFailure() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  // No response added - fetchUrl will return std::nullopt
+
+  std::string stationJson = R"({"label": "Test", "RLOIid": "123", "notation": "test"})";
+  simdjson::dom::parser parser;
+  simdjson::dom::element s;
+  auto error = parser.parse(stationJson).get(s);
+  QVERIFY(error == 0U);
+
+  StationModel model({Station::fromJson(s)});
+  QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+
+  bool result = model.fetchMeasures(0);
+
+  QVERIFY(!result);
+  QCOMPARE(dataChangedSpy.count(), 0);
+
+  HttpClient::setInstance(nullptr);
+}
+
+void StationModelTest::testFetchMeasuresInvalidJson() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  mockClient.addResponse(
+      "https://environment.data.gov.uk/flood-monitoring/id/stations/test/measures",
+      "invalid json {{{");
+
+  std::string stationJson = R"({"label": "Test", "RLOIid": "123", "notation": "test"})";
+  simdjson::dom::parser parser;
+  simdjson::dom::element s;
+  auto error = parser.parse(stationJson).get(s);
+  QVERIFY(error == 0U);
+
+  StationModel model({Station::fromJson(s)});
+  QSignalSpy dataChangedSpy(&model, &QAbstractItemModel::dataChanged);
+
+  bool result = model.fetchMeasures(0);
+
+  QVERIFY(!result);
+  QCOMPARE(dataChangedSpy.count(), 0);
+
+  HttpClient::setInstance(nullptr);
+}
 
 QTEST_MAIN(StationModelTest)
 #include "StationModelTest.moc"

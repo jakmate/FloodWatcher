@@ -1,5 +1,7 @@
 // tests/unit/WarningModelTest.cpp
 #include "WarningModel.hpp"
+#include "HttpClient.hpp"
+#include "MockHttpClient.hpp"
 #include "Warning.hpp"
 #include <QGeoCoordinate>
 #include <QSignalSpy>
@@ -25,6 +27,9 @@ class WarningModelTest : public QObject {
     static void testCalculateNextUpdateMs();
     static void testStartAutoUpdate();
     static void testStopAutoUpdate();
+    static void testFetchWarningsSuccess();
+    static void testFetchWarningsHttpFailure();
+    static void testFetchWarningsInvalidJson();
 };
 
 void WarningModelTest::testRowCount() {
@@ -298,6 +303,113 @@ void WarningModelTest::testStopAutoUpdate() {
 
   model.stopAutoUpdate();
   QVERIFY(!timer->isActive());
+}
+
+void WarningModelTest::testFetchWarningsSuccess() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  // Setup mock response
+  std::string apiResponse = R"({
+    "items": [
+      {
+        "floodAreaID": "fetch1",
+        "description": "Fetched Warning",
+        "severity": "Severe",
+        "severityLevel": 3,
+        "eaAreaName": "Fetched Area",
+        "message": "Test fetch message"
+      }
+    ]
+  })";
+
+  mockClient.addResponse("https://environment.data.gov.uk/flood-monitoring/id/floods", apiResponse);
+
+  // Create model with initial warning
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string initialJson = R"({"floodAreaID": "initial", "severityLevel": 1})";
+  auto error = parser.parse(initialJson).get(w);
+  QVERIFY(error == 0U);
+
+  WarningModel model({Warning::fromJson(w)});
+
+  QSignalSpy updateSpy(&model, &WarningModel::warningsUpdated);
+
+  // Trigger fetch
+  model.fetchWarnings();
+
+  // Verify update signal was emitted
+  QCOMPARE(updateSpy.count(), 1);
+  QCOMPARE(updateSpy.at(0).at(0).toInt(), 1); // 1 warning
+
+  // Verify model updated
+  QCOMPARE(model.rowCount(), 1);
+  QCOMPARE(model.data(model.index(0, 0), Qt::UserRole + 1).toString(), QString("Fetched Warning"));
+
+  HttpClient::setInstance(nullptr);
+}
+
+void WarningModelTest::testFetchWarningsHttpFailure() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  // Don't add any mock response - fetchUrl will return std::nullopt
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string json = R"({"floodAreaID": "1", "severityLevel": 2})";
+  auto error = parser.parse(json).get(w);
+  QVERIFY(error == 0U);
+
+  WarningModel model({Warning::fromJson(w)});
+  QSignalSpy updateSpy(&model, &WarningModel::warningsUpdated);
+
+  // Should not crash on failure
+  try {
+    model.fetchWarnings();
+    QVERIFY(true); // Success if no exception
+  } catch (...) {
+    QFAIL("fetchWarnings threw an exception");
+  }
+
+  // Should not emit update signal
+  QCOMPARE(updateSpy.count(), 0);
+
+  // Original data should remain
+  QCOMPARE(model.rowCount(), 1);
+
+  HttpClient::setInstance(nullptr);
+}
+
+void WarningModelTest::testFetchWarningsInvalidJson() {
+  MockHttpClient mockClient;
+  HttpClient::setInstance(&mockClient);
+
+  mockClient.addResponse("https://environment.data.gov.uk/flood-monitoring/id/floods",
+                         "invalid json {{{" // Malformed JSON
+  );
+
+  simdjson::dom::parser parser;
+  simdjson::dom::element w;
+  std::string json = R"({"floodAreaID": "1", "severityLevel": 2})";
+  auto error = parser.parse(json).get(w);
+  QVERIFY(error == 0U);
+
+  WarningModel model({Warning::fromJson(w)});
+  QSignalSpy updateSpy(&model, &WarningModel::warningsUpdated);
+
+  try {
+    model.fetchWarnings();
+    QVERIFY(true);
+  } catch (...) {
+    QFAIL("fetchWarnings threw an exception");
+  }
+
+  // Should not update on parse error
+  QCOMPARE(updateSpy.count(), 0);
+  QCOMPARE(model.rowCount(), 1);
+
+  HttpClient::setInstance(nullptr);
 }
 
 QTEST_MAIN(WarningModelTest)

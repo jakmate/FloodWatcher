@@ -74,6 +74,9 @@ gtest_discover_tests(gtest_unit_tests)
 
 # QtTest tests
 add_executable(qttest_warning_model unit/WarningModelTest.cpp)
+target_include_directories(qttest_warning_model PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+)
 target_link_libraries(qttest_warning_model 
     PRIVATE 
         flood_monitor_core 
@@ -87,6 +90,9 @@ endif()
 add_test(NAME qttest_warning_model COMMAND qttest_warning_model)
 
 add_executable(qttest_station_model unit/StationModelTest.cpp)
+target_include_directories(qttest_station_model PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/mocks
+)
 target_link_libraries(qttest_station_model 
     PRIVATE 
         flood_monitor_core 
