@@ -1,6 +1,3 @@
-# Change Tests
-# Get rid of redundancies...
-
 # FloodWatcher
 
 [![Lint & Format](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml/badge.svg)](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml)
@@ -17,7 +14,6 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 ## To Do
 
 - Settle on a package manager...
-- Improve qt (create clusters with stations?)
 - Fix builds (Do once package manager sorted)
 - Consider curl multi for polygons (was slower but try again)
 
@@ -26,7 +22,7 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 - C++17 or later
 - CMake 3.15+
 - libcurl
-- nlohmann/json
+- simdjson
 - Qt 6 (with Core, Qml, Gui, and Positioning modules)
 
 ## Building
