@@ -18,7 +18,7 @@ find_package(CURL REQUIRED)
 find_package(simdjson REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Qml Positioning)
 
-# Create executable with files listed directly
+# Create executable
 add_executable(flood_monitor
     src/main.cpp
     src/MonitoringData.cpp
@@ -66,10 +66,12 @@ endif()
 
 # Coverage option
 option(ENABLE_COVERAGE "Enable coverage reporting" OFF)
-if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if(ENABLE_COVERAGE AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" AND NOT MSVC)
     message(STATUS "Building with coverage flags")
-    target_compile_options(flood_monitor PRIVATE -O0 -g --coverage)
-    target_link_options(flood_monitor PRIVATE --coverage)
+    add_library(coverage_flags INTERFACE)
+    target_compile_options(coverage_flags INTERFACE --coverage -O0 -g)
+    target_link_options(coverage_flags INTERFACE --coverage)
+    target_link_libraries(flood_monitor PRIVATE coverage_flags)
 endif()
 
 # Profiling option
@@ -100,7 +102,7 @@ if(ENABLE_COVERAGE)
         add_custom_target(coverage
             COMMAND ${CMAKE_COMMAND} -E remove_directory coverage
             COMMAND ${CMAKE_COMMAND} -E make_directory coverage
-            COMMAND ctest -j --output-on-failure
+            COMMAND ${CMAKE_CTEST_COMMAND} -j --output-on-failure
             COMMAND ${GCOVR}
                 -j
                 -r ${CMAKE_SOURCE_DIR}
@@ -111,7 +113,9 @@ if(ENABLE_COVERAGE)
                 --print-summary
                 -o coverage/index.html
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-            COMMENT "Generating filtered coverage report"
+            COMMENT "Generating filtered coverage report with gcovr"
         )
+    else()
+        message(WARNING "gcovr not found — please install gcovr to enable coverage reporting")
     endif()
 endif()

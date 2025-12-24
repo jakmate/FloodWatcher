@@ -40,11 +40,6 @@ target_link_libraries(flood_monitor_core
         Qt6::Positioning
 )
 
-if(ENABLE_COVERAGE)
-    target_compile_options(flood_monitor_core PRIVATE --coverage)
-    target_link_options(flood_monitor_core PRIVATE --coverage)
-endif()
-
 # GoogleTest tests
 add_executable(gtest_unit_tests
     unit/MonitoringDataTest.cpp
@@ -65,11 +60,6 @@ target_link_libraries(gtest_unit_tests
         flood_monitor_core
 )
 
-if(ENABLE_COVERAGE)
-    target_compile_options(gtest_unit_tests PRIVATE --coverage)
-    target_link_options(gtest_unit_tests PRIVATE --coverage)
-endif()
-
 gtest_discover_tests(gtest_unit_tests)
 
 # QtTest tests
@@ -83,10 +73,6 @@ target_link_libraries(qttest_warning_model
         Qt6::Test
         Qt6::Positioning
 )
-if(ENABLE_COVERAGE)
-    target_compile_options(qttest_warning_model PRIVATE --coverage)
-    target_link_options(qttest_warning_model PRIVATE --coverage)
-endif()
 add_test(NAME qttest_warning_model COMMAND qttest_warning_model)
 
 add_executable(qttest_station_model unit/StationModelTest.cpp)
@@ -98,11 +84,14 @@ target_link_libraries(qttest_station_model
         flood_monitor_core 
         Qt6::Test
 )
-if(ENABLE_COVERAGE)
-    target_compile_options(qttest_station_model PRIVATE --coverage)
-    target_link_options(qttest_station_model PRIVATE --coverage)
-endif()
 add_test(NAME qttest_station_model COMMAND qttest_station_model)
+
+if(TARGET coverage_flags)
+    target_link_libraries(flood_monitor_core PRIVATE coverage_flags)
+    target_link_libraries(gtest_unit_tests PRIVATE coverage_flags)
+    target_link_libraries(qttest_warning_model PRIVATE coverage_flags)
+    target_link_libraries(qttest_station_model PRIVATE coverage_flags)
+endif()
 
 # Target for all unit tests
 add_custom_target(unit_tests
