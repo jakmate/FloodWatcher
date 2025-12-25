@@ -6,7 +6,13 @@ Item {
 
     property var stationModel: null
     property var selectedStation: null
-    readonly property var stationMeasures: selectedStation ? (selectedStation.model.measures || []) : []
+    readonly property int selectedIndex: selectedStation ? selectedStation.index : -1
+    
+    // Helper function to get role data
+    function getRoleData(roleOffset) {
+        if (selectedIndex < 0) return "";
+        return stationModel.data(stationModel.index(selectedIndex, 0), Qt.UserRole + roleOffset);
+    }
 
     signal stationClosed
 
@@ -33,7 +39,7 @@ Item {
             spacing: 8
 
             Text {
-                text: root.selectedStation ? root.selectedStation.model.label : "No station selected"
+                text: root.selectedIndex >= 0 ? root.getRoleData(1) : "No station selected"
                 color: "white"
                 font.pixelSize: 18
                 font.bold: true
@@ -69,7 +75,7 @@ Item {
         }
 
         Text {
-            text: root.selectedStation ? root.selectedStation.model.town : "Tap a marker on the map to see details."
+            text: root.selectedIndex >= 0 ? root.getRoleData(2) : "Tap a marker on the map to see details."
             color: "#cccccc"
             font.pixelSize: 14
             wrapMode: Text.WordWrap
@@ -92,7 +98,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.model.RLOIid : ""
+                    text: root.getRoleData(5)
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -108,7 +114,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.model.riverName : ""
+                    text: root.getRoleData(8)
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -124,7 +130,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.model.catchmentName : ""
+                    text: root.getRoleData(6)
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -140,7 +146,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.model.dateOpened : ""
+                    text: root.getRoleData(7)
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -156,7 +162,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.model.latitude : ""
+                    text: root.getRoleData(3)
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -172,7 +178,7 @@ Item {
                 }
 
                 Text {
-                    text: root.selectedStation ? root.selectedStation.model.longitude : ""
+                    text: root.getRoleData(4)
                     color: "white"
                     font.pixelSize: 13
                 }
@@ -182,7 +188,7 @@ Item {
         // Measurements Section
         Column {
             spacing: 6
-            visible: root.selectedStation !== null && root.stationMeasures.length > 0
+            visible: root.selectedStation !== null && measuresRepeater.count > 0
             width: parent.width
 
             Rectangle {
@@ -199,7 +205,8 @@ Item {
             }
 
             Repeater {
-                model: root.stationMeasures
+                id: measuresRepeater
+                model: root.selectedIndex >= 0 ? root.getRoleData(10) : []
 
                 delegate: Column {
                     id: measurementDelegate
