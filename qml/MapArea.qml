@@ -75,7 +75,7 @@ Item {
         activeMapType: map.supportedMapTypes[map.supportedMapTypes.length - 1]
 
         onZoomLevelChanged: {
-            clusterModel.updateClusters(map.zoomLevel);
+            root.clusterModel.updateClusters(map.zoomLevel);
         }
 
         // Flood warning polygons
@@ -109,17 +109,14 @@ Item {
         // Station markers
         MapItemView {
             id: clusterView
-            model: clusterModel
+            model: root.clusterModel
 
             delegate: MapQuickItem {
                 id: clusterDelegate
                 required property var model
                 required property int index
 
-                coordinate: QtPositioning.coordinate(
-                    clusterDelegate.model.latitude, 
-                    clusterDelegate.model.longitude
-                )
+                coordinate: QtPositioning.coordinate(clusterDelegate.model.latitude, clusterDelegate.model.longitude)
                 anchorPoint: Qt.point(sourceItem.width / 2, sourceItem.height / 2)
 
                 sourceItem: Rectangle {
@@ -128,10 +125,7 @@ Item {
                     radius: width / 2
                     border.color: "white"
                     border.width: clusterDelegate.model.isCluster ? 2 : 1
-                    color: clusterDelegate.model.isCluster ? "#2196F3" : 
-                        (root.selectedStation && 
-                            root.selectedStation.index === clusterDelegate.model.stationIndex) 
-                        ? "red" : "black"
+                    color: clusterDelegate.model.isCluster ? "#2196F3" : (root.selectedStation && root.selectedStation.index === clusterDelegate.model.stationIndex) ? "red" : "black"
 
                     Text {
                         visible: clusterDelegate.model.isCluster
@@ -156,9 +150,7 @@ Item {
                                 if (root.stationModel) {
                                     root.stationSelected({
                                         "index": stationIndex,
-                                        "model": root.stationModel.data(
-                                            root.stationModel.index(stationIndex, 0)
-                                        )
+                                        "model": root.stationModel.data(root.stationModel.index(stationIndex, 0))
                                     });
                                 }
                             }

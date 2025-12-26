@@ -7,10 +7,11 @@ Item {
     property var stationModel: null
     property var selectedStation: null
     readonly property int selectedIndex: selectedStation ? selectedStation.index : -1
-    
+
     // Helper function to get role data
     function getRoleData(roleOffset) {
-        if (selectedIndex < 0) return "";
+        if (selectedIndex < 0)
+            return "";
         return stationModel.data(stationModel.index(selectedIndex, 0), Qt.UserRole + roleOffset);
     }
 
