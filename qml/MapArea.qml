@@ -7,6 +7,7 @@ Item {
     id: root
 
     property var stationModel: null
+    property var clusterModel: null
     property var warningModel: null
     property var selectedStation: null
     readonly property real minLat: 53.5
@@ -73,6 +74,10 @@ Item {
         zoomLevel: 6.125
         activeMapType: map.supportedMapTypes[map.supportedMapTypes.length - 1]
 
+        onZoomLevelChanged: {
+            clusterModel.updateClusters(map.zoomLevel);
+        }
+
         // Flood warning polygons
         MapItemView {
             id: warningView
@@ -103,39 +108,60 @@ Item {
 
         // Station markers
         MapItemView {
-            id: stationView
-            model: root.stationModel
+            id: clusterView
+            model: clusterModel
 
             delegate: MapQuickItem {
-                id: stationDelegate
+                id: clusterDelegate
                 required property var model
                 required property int index
 
-                coordinate: QtPositioning.coordinate(stationDelegate.model.latitude, stationDelegate.model.longitude)
+                coordinate: QtPositioning.coordinate(
+                    clusterDelegate.model.latitude, 
+                    clusterDelegate.model.longitude
+                )
                 anchorPoint: Qt.point(sourceItem.width / 2, sourceItem.height / 2)
 
                 sourceItem: Rectangle {
-                    id: markerRect
-
-                    width: 8
-                    height: 8
-                    radius: 5
+                    width: clusterDelegate.model.isCluster ? 30 : 8
+                    height: clusterDelegate.model.isCluster ? 30 : 8
+                    radius: width / 2
                     border.color: "white"
-                    border.width: 1
-                    color: {
-                        if (root.selectedStation && root.selectedStation.index === stationDelegate.index)
-                            return "red";
+                    border.width: clusterDelegate.model.isCluster ? 2 : 1
+                    color: clusterDelegate.model.isCluster ? "#2196F3" : 
+                        (root.selectedStation && 
+                            root.selectedStation.index === clusterDelegate.model.stationIndex) 
+                        ? "red" : "black"
 
-                        return "black";
+                    Text {
+                        visible: clusterDelegate.model.isCluster
+                        anchors.centerIn: parent
+                        text: clusterDelegate.model.count
+                        color: "white"
+                        font.bold: true
+                        font.pixelSize: 12
                     }
 
                     MouseArea {
                         anchors.fill: parent
                         onClicked: {
-                            root.stationSelected({
-                                "index": stationDelegate.index,
-                                "model": stationDelegate.model
-                            });
+                            if (clusterDelegate.model.isCluster) {
+                                // Handle cluster click - zoom in or show cluster details
+                                var zoomLevel = map.zoomLevel + 1;
+                                map.zoomLevel = Math.min(15, zoomLevel);
+                            } else if (clusterDelegate.model.stationIndex >= 0) {
+                                // Handle individual station click
+                                var stationIndex = clusterDelegate.model.stationIndex;
+                                // Make sure station data is loaded
+                                if (root.stationModel) {
+                                    root.stationSelected({
+                                        "index": stationIndex,
+                                        "model": root.stationModel.data(
+                                            root.stationModel.index(stationIndex, 0)
+                                        )
+                                    });
+                                }
+                            }
                         }
                     }
                 }

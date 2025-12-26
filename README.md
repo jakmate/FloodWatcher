@@ -14,7 +14,6 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 ## To Do
 
 - Settle on a package manager...
-- Improve qt (create clusters with stations?)
 - Fix builds (Do once package manager sorted)
 - Consider curl multi for polygons (was slower but try again)
 

@@ -8,6 +8,7 @@ Window {
 
     property var selectedStation: null
     required property var stationModel
+    required property var clusterModel
     required property var warningModel
 
     // Helper function to calculate centroid of a polygon
@@ -96,6 +97,7 @@ Window {
             height: parent.height
             selectedStation: root.selectedStation
             stationModel: root.stationModel
+            clusterModel: root.clusterModel
             warningModel: root.warningModel
             onStationSelected: station => {
                 root.selectedStation = station;
