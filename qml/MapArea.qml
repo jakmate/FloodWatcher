@@ -125,7 +125,7 @@ Item {
                     radius: width / 2
                     border.color: "white"
                     border.width: clusterDelegate.model.isCluster ? 2 : 1
-                    color: clusterDelegate.model.isCluster ? "#2196F3" : (root.selectedStation && root.selectedStation.index === clusterDelegate.model.stationIndex) ? "red" : "black"
+                    color: clusterDelegate.model.isCluster ? "black" : (root.selectedStation && root.selectedStation.index === clusterDelegate.model.stationIndex) ? "red" : "black"
 
                     Text {
                         visible: clusterDelegate.model.isCluster
@@ -141,7 +141,7 @@ Item {
                         onClicked: {
                             if (clusterDelegate.model.isCluster) {
                                 // Handle cluster click - zoom in or show cluster details
-                                var zoomLevel = map.zoomLevel + 1;
+                                var zoomLevel = map.zoomLevel + 2;
                                 map.zoomLevel = Math.min(15, zoomLevel);
                             } else if (clusterDelegate.model.stationIndex >= 0) {
                                 // Handle individual station click
