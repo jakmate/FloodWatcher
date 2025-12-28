@@ -9,57 +9,59 @@ on:
 jobs:
   test-and-coverage:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v5
+      - name: Checkout repository
+        uses: actions/checkout@v5
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
-      - name: Install aqtinstall
+      - name: Install conan and aqtinstall
         run: |
-          pip install aqtinstall
+          pip install conan aqtinstall
 
       - name: Install Qt 6.10.0
         run: |
           aqt install-qt linux desktop 6.10.0 linux_gcc_64 --modules qtlocation qtpositioning --archives icu qtbase qtdeclarative
-
-      - name: Add Qt tools to PATH
-        run: |
-          echo "${{ github.workspace }}/6.10.0/gcc_64/bin" >> $GITHUB_PATH
+          echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/6.10.0/gcc_64" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
           sudo apt-get update
-           sudo apt-get install -y libcurl4-openssl-dev clang-format clang-tidy \
-            cmake build-essential libsimdjson-dev ninja-build gcovr \
-            libgl1-mesa-dev libglu1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
+          sudo apt-get install -y cmake ninja-build gcovr \
+            libgl1-mesa-dev libxkbcommon-dev
+
+      - name: Install Conan dependencies
+        run: |
+          conan profile detect
+          conan install . --build=missing -s build_type=Debug
 
       - name: Configure CMake with coverage
         run: |
-          cmake -GNinja \
-            -B build \
+          cmake -B build/Debug \
+            -DCMAKE_TOOLCHAIN_FILE=build/Debug/generators/conan_toolchain.cmake \
+            -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DENABLE_COVERAGE=ON \
             -DBUILD_TESTS=ON
 
       - name: Build
-        run: cmake --build build
+        run: cmake --build build/Debug
 
       - name: Run tests
         run: |
-          cd build
+          cd build/Debug
           ctest -j --output-on-failure
 
       - name: Generate coverage report
         run: |
-          cd build
-          gcovr -r .. \
+          cd build/Debug
+          gcovr -r ../.. \
             -j \
-            --filter ../src/ \
-            --filter ../include/ \
+            --filter ../../src/ \
+            --filter ../../include/ \
             --exclude '.*tests/.*' \
             --exclude-unreachable-branches \
             --xml -o coverage.xml \
@@ -68,7 +70,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
-          file: ./build/coverage.xml
+          file: ./build/Release/coverage.xml
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: unittests
           name: codecov-umbrella

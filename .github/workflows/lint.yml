@@ -42,11 +42,11 @@ jobs:
 
       - name: Generate compile_commands.json
         run: |
-          cmake --preset conan-qt -GNinja -DBUILD_TESTS=ON
+          cmake --preset conan-release -GNinja -DBUILD_TESTS=ON
 
       - name: Build to generate moc files
         run: |
-          cmake --build --preset conan-release-qt --target qttest_station_model qttest_warning_model
+          cmake --build --preset conan-release --target qttest_station_model qttest_warning_model
 
       - name: Run clang-format check
         run: |
@@ -55,7 +55,7 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          run-clang-tidy -p build -j $(nproc) \
+          run-clang-tidy -p build/Release -j $(nproc) \
             -header-filter='^(?!.*(_autogen|\.moc)).*(include/.*\.hpp$)' \
             '.*(src/.*\.cpp$|tests/cpp/mocks/.*\.hpp$|tests/cpp/unit/.*\.cpp$)'
 

@@ -7,7 +7,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_program(CCACHE_PROGRAM ccache)
-if(CCACHE_PROGRAM)
+if(CCACHE_PROGRAM AND NOT MSVC)
     set(CMAKE_CXX_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
     set(CMAKE_C_COMPILER_LAUNCHER "${CCACHE_PROGRAM}")
     message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
@@ -41,6 +41,21 @@ add_executable(flood_monitor
     include/TypeUtils.hpp
     qml.qrc
 )
+
+if(WIN32)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt 
+        HINTS "${Qt6_DIR}/../../../bin")
+    if(WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET flood_monitor POST_BUILD
+            COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+                --qmldir "${CMAKE_SOURCE_DIR}"
+                --no-compiler-runtime
+                --debug
+                "$<TARGET_FILE:flood_monitor>"
+            COMMENT "Deploying Qt dependencies..."
+        )
+    endif()
+endif()
 
 # Target properties
 target_compile_features(flood_monitor PRIVATE cxx_std_17)

@@ -1,3 +1,5 @@
+# gcovr does not work with msvc so either change compiler to clang/gcc or change coverage to something else
+
 # FloodWatcher
 
 [![Lint & Format](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml/badge.svg)](https://github.com/jakmate/FloodWatcher/actions/workflows/lint.yml)
@@ -13,7 +15,6 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 ## To Do
 
-- Improve qt (create clusters with stations?)
 - Fix builds (Do once package manager sorted)
 - Consider curl multi for polygons (was slower but try again)
 - gtest vs Qt Test (or keep both use depending on file)
@@ -23,11 +24,22 @@ Features an interactive map dashboard built with Qt that displays flood warnings
 
 - C++17 or later
 - CMake 3.15+
-- libcurl
-- simdjson
-- Qt 6 (with Core, Qml, Gui, and Positioning modules)
+- libcurl 8.17.0
+- simdjson 4.2.2
+- Qt 6.10 (with Core, Qml, Gui, and Positioning modules)
+
+### Test Requirements
+
+- Google Test 1.17.0
+- Qt Test
 
 ## Building
+
+### Windows
+
+Most likely will have to mess with CMakeUserPresets to make it ignore MSYS2 or mingw installs, if using msvc.
+
+### Using system dependencies
 
 ```bash
 git clone https://github.com/jakmate/FloodWatcher.git
@@ -36,15 +48,18 @@ cmake -GNinja -B build
 cmake --build build
 ```
 
-### With Conan
+### Using Conan
 
 ```bash
+# Download aqtinstall and donwload Qt
 conan install . --build=missing
-cmake --preset conan-release
-cmake --build --preset conan-release
+cmake --preset conan-debug
+cmake --build --preset conan-debug
 ```
 
 ## Testing
+
+### Using system dependencies
 
 ```bash
 # Download gcovr
@@ -53,11 +68,34 @@ cmake --build build --target unit_tests
 cmake --build build --target coverage
 ```
 
-## Profiling
+### Using Conan
 
 ```bash
-cmake -GNinja -DENABLE_PROFILING=ON -B build
-cmake --build build
+# Download gcovr
+cmake --preset conan-debug -DENABLE_COVERAGE=ON -DBUILD_TESTS=ON
+cmake --build --preset conan-debug --target unit_tests
+cmake --build --preset conan-debug --target coverage
+```
+
+## Profiling
+
+### Using system dependencies
+
+```bash
+cmake --preset conan-debug -DENABLE_PROFILING=ON
+cmake --build --preset conan-debug
+cd build
+./flood_monitor.exe
+gprof flood_monitor.exe gmon.out > analysis.txt
+# or for ease of read
+gprof flood_monitor.exe gmon.out --flat-profile | head -30
+```
+
+### Using Conan
+
+```bash
+cmake --preset conan-debug -DENABLE_PROFILING=ON
+cmake --build --preset conan-debug
 cd build
 ./flood_monitor.exe
 gprof flood_monitor.exe gmon.out > analysis.txt
@@ -68,19 +106,3 @@ gprof flood_monitor.exe gmon.out --flat-profile | head -30
 ## API Reference
 
 Data source: UK Environment Agency Flood Monitoring API [[1](https://environment.data.gov.uk/flood-monitoring/doc/reference)]
-
-
-## When using Conan for Qt:
-### using msvc
-"Qt6::QGeoPositionInfoSourceFactoryGeoclue2")
-CMake Error at build/Release/generators/cmakedeps_macros.cmake:81 (message):
-  Library 'qtposition_geoclue2' not found in package.  If
-  'qtposition_geoclue2' is a system library, declare it with
-  'cpp_info.system_libs' property
-Call Stack (most recent call first):
-  build/Release/generators/Qt6-Target-release.cmake:23 (conan_package_library_targets)
-  build/Release/generators/Qt6Targets.cmake:124 (include)
-  build/Release/generators/Qt6Config.cmake:16 (include)
-  CMakeLists.txt:19 (find_package)
-### using gcc with ucrt
-does not compile fully...

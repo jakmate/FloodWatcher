@@ -53,14 +53,9 @@ target_link_libraries(gtest_unit_tests
         GTest::gtest_main
         GTest::gmock
         flood_monitor_core
+        CURL::libcurl
+        simdjson::simdjson 
 )
-
-if(ENABLE_COVERAGE)
-    target_compile_options(gtest_unit_tests PRIVATE --coverage)
-    target_link_options(gtest_unit_tests PRIVATE --coverage)
-endif()
-
-gtest_discover_tests(gtest_unit_tests)
 
 # QtTest tests
 add_executable(qttest_warning_model unit/WarningModelTest.cpp)
@@ -69,28 +64,56 @@ target_link_libraries(qttest_warning_model
         flood_monitor_core 
         Qt6::Test
         Qt6::Positioning
+        CURL::libcurl
+        simdjson::simdjson 
 )
-if(ENABLE_COVERAGE)
-    target_compile_options(qttest_warning_model PRIVATE --coverage)
-    target_link_options(qttest_warning_model PRIVATE --coverage)
-endif()
-add_test(NAME qttest_warning_model COMMAND qttest_warning_model)
 
 add_executable(qttest_station_model unit/StationModelTest.cpp)
 target_link_libraries(qttest_station_model 
     PRIVATE 
         flood_monitor_core 
         Qt6::Test
+        CURL::libcurl
+        simdjson::simdjson 
 )
+
+if(WIN32)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt 
+        HINTS "${Qt6_DIR}/../../../bin")
+    if(WINDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET qttest_warning_model POST_BUILD
+            COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+                --no-compiler-runtime
+                --debug
+                "$<TARGET_FILE:qttest_warning_model>"
+            COMMENT "Deploying Qt for qttest_warning_model..."
+        )
+        add_custom_command(TARGET qttest_station_model POST_BUILD
+            COMMAND "${WINDEPLOYQT_EXECUTABLE}"
+                --no-compiler-runtime
+                --debug
+                "$<TARGET_FILE:qttest_station_model>"
+            COMMENT "Deploying Qt for qttest_station_model..."
+        )
+    endif()
+endif()
+
 if(ENABLE_COVERAGE)
+    target_compile_options(gtest_unit_tests PRIVATE --coverage)
+    target_link_options(gtest_unit_tests PRIVATE --coverage)
+    target_compile_options(qttest_warning_model PRIVATE --coverage)
+    target_link_options(qttest_warning_model PRIVATE --coverage)
     target_compile_options(qttest_station_model PRIVATE --coverage)
     target_link_options(qttest_station_model PRIVATE --coverage)
 endif()
+
+gtest_discover_tests(gtest_unit_tests)
+add_test(NAME qttest_warning_model COMMAND qttest_warning_model)
 add_test(NAME qttest_station_model COMMAND qttest_station_model)
 
 # Target for all unit tests
 add_custom_target(unit_tests
-    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+    COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure -C $<CONFIG>
     DEPENDS gtest_unit_tests qttest_warning_model qttest_station_model
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Running all unit tests"
