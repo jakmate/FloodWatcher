@@ -2,9 +2,11 @@ name: Tests and Coverage
 
 on:
   push:
-    branches: [main, develop]
+    branches:
+      - "**"
   pull_request:
-    branches: [main, develop]
+    branches:
+      - main
 
 jobs:
   test-and-coverage:
@@ -33,7 +35,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-           sudo apt-get install -y libcurl4-openssl-dev clang-format clang-tidy \
+           sudo apt-get install -y libcurl4-openssl-dev \
             cmake build-essential libsimdjson-dev ninja-build gcovr \
             libgl1-mesa-dev libglu1-mesa-dev libxkbcommon-dev libxkbcommon-x11-dev
 
@@ -60,7 +62,6 @@ jobs:
             -j \
             --filter ../src/ \
             --filter ../include/ \
-            --exclude '.*tests/.*' \
             --exclude-unreachable-branches \
             --xml -o coverage.xml \
             --print-summary

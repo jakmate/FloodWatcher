@@ -1,8 +1,6 @@
 #pragma once
 #include "Station.hpp"
 #include <QAbstractListModel>
-#include <QGeoCoordinate>
-#include <memory>
 #include <vector>
 
 struct ClusterPoint {

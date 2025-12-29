@@ -1,6 +1,4 @@
 #include "StationCluster.hpp"
-#include <algorithm>
-#include <cmath>
 
 // QuadTreeNode implementation
 QuadTreeNode::QuadTreeNode(const Bounds& bounds, int maxDepth)

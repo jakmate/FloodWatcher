@@ -16,6 +16,7 @@ include(GoogleTest)
 
 # Core library for testing
 add_library(flood_monitor_core STATIC
+    ${CMAKE_SOURCE_DIR}/src/main.cpp
     ${CMAKE_SOURCE_DIR}/src/MonitoringData.cpp
     ${CMAKE_SOURCE_DIR}/src/Warning.cpp
     ${CMAKE_SOURCE_DIR}/src/WarningModel.cpp
@@ -24,6 +25,7 @@ add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/src/Measure.cpp
     ${CMAKE_SOURCE_DIR}/src/HttpClient.cpp
     ${CMAKE_SOURCE_DIR}/src/TypeUtils.cpp
+    ${CMAKE_SOURCE_DIR}/src/StationCluster.cpp
     ${CMAKE_SOURCE_DIR}/include/WarningModel.hpp
     ${CMAKE_SOURCE_DIR}/include/StationModel.hpp
 )
@@ -37,7 +39,9 @@ target_link_libraries(flood_monitor_core
         CURL::libcurl
         simdjson::simdjson
         Qt6::Core
+        Qt6::Gui
         Qt6::Positioning
+        Qt6::Qml
 )
 
 # GoogleTest tests
