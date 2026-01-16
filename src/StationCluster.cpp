@@ -5,6 +5,13 @@ QuadTreeNode::QuadTreeNode(const Bounds& bounds, int maxDepth)
     : m_minLat(bounds.minLat), m_maxLat(bounds.maxLat), m_minLon(bounds.minLon),
       m_maxLon(bounds.maxLon), m_depth(0), m_maxDepth(maxDepth) {}
 
+Quadrant getQuadrant(const QuadrantStruct& quadrant) {
+  if (quadrant.lat >= quadrant.midLat) {
+    return (quadrant.lon >= quadrant.midLon) ? NE : NW;
+  }
+  return (quadrant.lon >= quadrant.midLon) ? SE : SW;
+}
+
 void QuadTreeNode::insert(const ClusterPoint& point) {
   if (point.lat < m_minLat || point.lat > m_maxLat || point.lon < m_minLon ||
       point.lon > m_maxLon) {
@@ -16,18 +23,23 @@ void QuadTreeNode::insert(const ClusterPoint& point) {
     double midLat = (m_minLat + m_maxLat) / 2.0;
     double midLon = (m_minLon + m_maxLon) / 2.0;
 
-    if (point.lat >= midLat && point.lon < midLon) {
-      m_nw->insert(point);
-    } else if (point.lat >= midLat && point.lon >= midLon) {
-      m_ne->insert(point);
-    } else if (point.lat < midLat && point.lon < midLon) {
-      m_sw->insert(point);
-    } else {
-      m_se->insert(point);
+    Quadrant quad = getQuadrant(QuadrantStruct{point.lat, point.lon, midLat, midLon});
+    switch (quad) {
+      case NW:
+        m_nw->insert(point);
+        break;
+      case NE:
+        m_ne->insert(point);
+        break;
+      case SW:
+        m_sw->insert(point);
+        break;
+      case SE:
+        m_se->insert(point);
+        break;
     }
   } else {
     m_points.push_back(point);
-
     if (shouldSubdivide()) {
       subdivide();
     }
@@ -47,31 +59,46 @@ void QuadTreeNode::subdivide() {
   m_sw = std::make_unique<QuadTreeNode>(Bounds{m_minLat, midLat, m_minLon, midLon}, m_maxDepth);
   m_se = std::make_unique<QuadTreeNode>(Bounds{m_minLat, midLat, midLon, m_maxLon}, m_maxDepth);
 
-  m_nw->m_depth = m_depth + 1;
-  m_ne->m_depth = m_depth + 1;
-  m_sw->m_depth = m_depth + 1;
-  m_se->m_depth = m_depth + 1;
+  int newDepth = m_depth + 1;
+  m_nw->m_depth = newDepth;
+  m_ne->m_depth = newDepth;
+  m_sw->m_depth = newDepth;
+  m_se->m_depth = newDepth;
 
+  m_children[NW] = m_nw.get();
+  m_children[NE] = m_ne.get();
+  m_children[SW] = m_sw.get();
+  m_children[SE] = m_se.get();
+
+  // Direct insert to avoid recursion overhead
   for (const auto& point : m_points) {
-    if (point.lat >= midLat && point.lon < midLon) {
-      m_nw->insert(point);
-    } else if (point.lat >= midLat && point.lon >= midLon) {
-      m_ne->insert(point);
-    } else if (point.lat < midLat && point.lon < midLon) {
-      m_sw->insert(point);
-    } else {
-      m_se->insert(point);
+    Quadrant quad = getQuadrant(QuadrantStruct{point.lat, point.lon, midLat, midLon});
+    switch (quad) {
+      case NW:
+        m_nw->m_points.push_back(point);
+        break;
+      case NE:
+        m_ne->m_points.push_back(point);
+        break;
+      case SW:
+        m_sw->m_points.push_back(point);
+        break;
+      case SE:
+        m_se->m_points.push_back(point);
+        break;
     }
   }
 
   m_points.clear();
+  m_points.shrink_to_fit();
 }
 
-Cluster QuadTreeNode::aggregatePoints() const {
+Cluster QuadTreeNode::aggregatePointsInline() const {
   Cluster cluster;
   cluster.lat = 0.0;
   cluster.lon = 0.0;
   cluster.count = static_cast<int>(m_points.size());
+  cluster.stationIndices.reserve(m_points.size());
 
   for (const auto& point : m_points) {
     cluster.lat += point.lat;
@@ -87,41 +114,63 @@ Cluster QuadTreeNode::aggregatePoints() const {
   return cluster;
 }
 
-void QuadTreeNode::collectAllPoints(std::vector<ClusterPoint>& points) const {
-  if (m_nw == nullptr) {
-    points.insert(points.end(), m_points.begin(), m_points.end());
-  } else {
-    m_nw->collectAllPoints(points);
-    m_ne->collectAllPoints(points);
-    m_sw->collectAllPoints(points);
-    m_se->collectAllPoints(points);
+Cluster QuadTreeNode::aggregateSubtree() const {
+  Cluster cluster;
+  cluster.lat = 0.0;
+  cluster.lon = 0.0;
+  cluster.count = 0;
+
+  std::function<void(const QuadTreeNode*)> aggregate = [&](const QuadTreeNode* node) {
+    if (node->m_nw == nullptr) {
+      for (const auto& point : node->m_points) {
+        cluster.lat += point.lat;
+        cluster.lon += point.lon;
+        cluster.stationIndices.push_back(point.stationIndex);
+        cluster.count++;
+      }
+    } else {
+      aggregate(node->m_nw.get());
+      aggregate(node->m_ne.get());
+      aggregate(node->m_sw.get());
+      aggregate(node->m_se.get());
+    }
+  };
+
+  aggregate(this);
+
+  if (cluster.count > 0) {
+    cluster.lat /= cluster.count;
+    cluster.lon /= cluster.count;
   }
+
+  return cluster;
 }
 
 std::vector<Cluster> QuadTreeNode::getClusters(double zoomLevel, double minDistance) const {
-  std::vector<Cluster> clusters;
+  double avgLat = (m_minLat + m_maxLat) / 2.0;
+  ClusterContext ctx{zoomLevel, minDistance * 111000.0, // Convert to meters
+                     111000.0, 111000.0 * std::cos(avgLat * M_PI / 180.0)};
 
-  // Calculate node size more accurately for geographic clustering
+  std::vector<Cluster> clusters;
+  getClustersImpl(ctx, clusters);
+  return clusters;
+}
+
+void QuadTreeNode::getClustersImpl(const ClusterContext& ctx,
+                                   std::vector<Cluster>& clusters) const {
   double latDiff = m_maxLat - m_minLat;
   double lonDiff = m_maxLon - m_minLon;
 
-  // Use approximate geographic distance (rough estimate)
-  double avgLat = (m_minLat + m_maxLat) / 2.0;
-  double metersPerDegreeLat = 111000; // Approximate
-  double metersPerDegreeLon = 111000 * std::cos(avgLat * M_PI / 180.0);
-
-  double nodeWidthMeters = lonDiff * metersPerDegreeLon;
-  double nodeHeightMeters = latDiff * metersPerDegreeLat;
+  double nodeWidthMeters = lonDiff * ctx.metersPerDegreeLon;
+  double nodeHeightMeters = latDiff * ctx.metersPerDegreeLat;
   double nodeSizeMeters =
       std::sqrt((nodeWidthMeters * nodeWidthMeters) + (nodeHeightMeters * nodeHeightMeters));
 
-  // Convert minDistance from degrees to meters for comparison
-  double minDistanceMeters = minDistance * metersPerDegreeLat;
-
-  // If this node has no children (leaf node)
+  // Leaf node
   if (m_nw == nullptr) {
-    // If the node is small enough or we're at high zoom, show individual points
-    if (zoomLevel >= 10.0 || m_points.size() <= 1 || nodeSizeMeters < minDistanceMeters * 0.5) {
+    if (ctx.zoomLevel >= 10.0 || m_points.size() <= 1 ||
+        nodeSizeMeters < ctx.minDistanceMeters * 0.5) {
+      // Show individual points
       for (const auto& point : m_points) {
         Cluster c;
         c.lat = point.lat;
@@ -131,61 +180,41 @@ std::vector<Cluster> QuadTreeNode::getClusters(double zoomLevel, double minDista
         clusters.push_back(c);
       }
     } else {
-      // Otherwise, cluster all points in this node
-      Cluster cluster = aggregatePoints();
-      clusters.push_back(cluster);
+      // Cluster all points in leaf
+      clusters.push_back(aggregatePointsInline());
     }
-  } else {
-    // If this node has children (branch node)
-
-    // For low zoom levels, we want to see larger clusters but not a single massive cluster
-    if (zoomLevel < 8.0) {
-      // Aggregate all points in this node, but limit the cluster size
-      std::vector<ClusterPoint> allPoints;
-      collectAllPoints(allPoints);
-
-      // If there are too many points, subdivide further
-      if (allPoints.size() > 100) {
-        // Instead of aggregating everything, recurse into children
-        auto nwClusters = m_nw->getClusters(zoomLevel, minDistance);
-        auto neClusters = m_ne->getClusters(zoomLevel, minDistance);
-        auto swClusters = m_sw->getClusters(zoomLevel, minDistance);
-        auto seClusters = m_se->getClusters(zoomLevel, minDistance);
-
-        clusters.insert(clusters.end(), nwClusters.begin(), nwClusters.end());
-        clusters.insert(clusters.end(), neClusters.begin(), neClusters.end());
-        clusters.insert(clusters.end(), swClusters.begin(), swClusters.end());
-        clusters.insert(clusters.end(), seClusters.begin(), seClusters.end());
-      } else {
-        // If there are not too many points, create a single cluster
-        Cluster cluster;
-        cluster.lat = 0.0;
-        cluster.lon = 0.0;
-        cluster.count = static_cast<int>(allPoints.size());
-        for (const auto& point : allPoints) {
-          cluster.lat += point.lat;
-          cluster.lon += point.lon;
-          cluster.stationIndices.push_back(point.stationIndex);
-        }
-        cluster.lat /= cluster.count;
-        cluster.lon /= cluster.count;
-        clusters.push_back(cluster);
-      }
-    } else {
-      // Otherwise, recurse into children
-      auto nwClusters = m_nw->getClusters(zoomLevel, minDistance);
-      auto neClusters = m_ne->getClusters(zoomLevel, minDistance);
-      auto swClusters = m_sw->getClusters(zoomLevel, minDistance);
-      auto seClusters = m_se->getClusters(zoomLevel, minDistance);
-
-      clusters.insert(clusters.end(), nwClusters.begin(), nwClusters.end());
-      clusters.insert(clusters.end(), neClusters.begin(), neClusters.end());
-      clusters.insert(clusters.end(), swClusters.begin(), swClusters.end());
-      clusters.insert(clusters.end(), seClusters.begin(), seClusters.end());
-    }
+    return;
   }
 
-  return clusters;
+  // Branch node
+  if (ctx.zoomLevel < 8.0) {
+    int totalPoints = 0;
+    std::function<int(const QuadTreeNode*)> countPoints = [&](const QuadTreeNode* node) {
+      if (node->m_nw == nullptr) {
+        return static_cast<int>(node->m_points.size());
+      }
+      return countPoints(node->m_nw.get()) + countPoints(node->m_ne.get()) +
+             countPoints(node->m_sw.get()) + countPoints(node->m_se.get());
+    };
+    totalPoints = countPoints(this);
+
+    if (totalPoints > 100) {
+      // Recurse into children
+      m_nw->getClustersImpl(ctx, clusters);
+      m_ne->getClustersImpl(ctx, clusters);
+      m_sw->getClustersImpl(ctx, clusters);
+      m_se->getClustersImpl(ctx, clusters);
+    } else {
+      // Aggregate entire subtree
+      clusters.push_back(aggregateSubtree());
+    }
+  } else {
+    // Normal recursion
+    m_nw->getClustersImpl(ctx, clusters);
+    m_ne->getClustersImpl(ctx, clusters);
+    m_sw->getClustersImpl(ctx, clusters);
+    m_se->getClustersImpl(ctx, clusters);
+  }
 }
 
 // ClusterModel implementation
@@ -218,14 +247,13 @@ void ClusterModel::buildQuadTree() {
     maxLon = std::max(maxLon, lon);
   }
 
-  // Add padding to ensure all stations are included
-  double latPadding = (maxLat - minLat) * 0.1;
-  double lonPadding = (maxLon - minLon) * 0.1;
+  double latPadding = std::max(0.1, (maxLat - minLat) * 0.1);
+  double lonPadding = std::max(0.1, (maxLon - minLon) * 0.1);
 
-  minLat -= std::max(0.1, latPadding); // Minimum 0.1 degree padding
-  maxLat += std::max(0.1, latPadding);
-  minLon -= std::max(0.1, lonPadding);
-  maxLon += std::max(0.1, lonPadding);
+  minLat -= latPadding;
+  maxLat += latPadding;
+  minLon -= lonPadding;
+  maxLon += lonPadding;
 
   m_quadTree = std::make_unique<QuadTreeNode>(Bounds{minLat, maxLat, minLon, maxLon}, 10);
 
@@ -236,7 +264,7 @@ void ClusterModel::buildQuadTree() {
     point.lon = m_stations[i].getLon();
     point.stationIndex = static_cast<int>(i);
 
-    // Only insert if within reasonable bounds (UK area)
+    // Only insert if within bounds
     if (point.lat >= 49.0 && point.lat <= 61.0 && point.lon >= -8.0 && point.lon <= 2.0) {
       m_quadTree->insert(point);
     }
@@ -244,7 +272,6 @@ void ClusterModel::buildQuadTree() {
 }
 
 double ClusterModel::getMinDistanceForZoom(double zoomLevel) {
-  // More granular and realistic distances for UK scale
   if (zoomLevel >= 14.0) {
     return 0.0005; // ~50m
   }

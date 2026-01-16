@@ -42,41 +42,51 @@ void MonitoringData::parseStations(const simdjson::dom::element& apiResponse) {
 }
 
 void MonitoringData::fetchAllPolygonsAsync() {
-  ThreadPool pool(10);
+  // Collect all URLs that need fetching
+  std::vector<std::string> urls;
+  std::vector<Warning*> warningPtrs;
 
   for (auto& warning : warnings) {
     if (!warning.getPolygonUrl().empty()) {
-      std::string url = warning.getPolygonUrl();
-      Warning* warningPtr = &warning;
-      pool.enqueue([this, url, warningPtr]() {
-        auto polygonData = HttpClient::getInstance().fetchUrl(url);
-        if (!polygonData) {
-          std::cerr << "Failed to fetch polygon from URL: " << url << '\n';
-          return;
-        }
+      urls.push_back(warning.getPolygonUrl());
+      warningPtrs.push_back(&warning);
+    }
+  }
 
-        try {
-          simdjson::dom::parser parser;
-          simdjson::dom::element polygonJson;
-          auto error = parser.parse(*polygonData).get(polygonJson);
-          if (error != 0U) {
-            std::cerr << "Error parsing polygon from URL " << url << ": " << error << '\n';
-            return;
-          }
+  if (urls.empty()) {
+    return;
+  }
 
-          // Extract geometry element properly
-          simdjson::dom::element geometry;
-          error = polygonJson["features"].at(0)["geometry"].get(geometry);
-          if (error != 0U) {
-            std::cerr << "Error getting geometry from polygon\n";
-            return;
-          }
+  // Fetch all URLs concurrently using multi-curl
+  auto results = HttpClient::getInstance().fetchUrls(urls);
 
-          warningPtr->setFloodAreaPolygon(Warning::parseGeoJsonPolygon(geometry));
-        } catch (const std::exception& e) {
-          std::cerr << "Error parsing polygon from URL " << url << ": " << e.what() << '\n';
-        }
-      });
+  // Process results
+  simdjson::dom::parser parser;
+  for (size_t i = 0; i < results.size(); ++i) {
+    if (!results[i]) {
+      std::cerr << "Failed to fetch polygon from URL: " << urls[i] << '\n';
+      continue;
+    }
+
+    try {
+      simdjson::dom::element polygonJson;
+      auto error = parser.parse(*results[i]).get(polygonJson);
+      if (error != 0U) {
+        std::cerr << "Error parsing polygon from URL " << urls[i] << ": " << error << '\n';
+        continue;
+      }
+
+      // Extract geometry element properly
+      simdjson::dom::element geometry;
+      error = polygonJson["features"].at(0)["geometry"].get(geometry);
+      if (error != 0U) {
+        std::cerr << "Error getting geometry from polygon\n";
+        continue;
+      }
+
+      warningPtrs[i]->setFloodAreaPolygon(Warning::parseGeoJsonPolygon(geometry));
+    } catch (const std::exception& e) {
+      std::cerr << "Error parsing polygon from URL " << urls[i] << ": " << e.what() << '\n';
     }
   }
 }

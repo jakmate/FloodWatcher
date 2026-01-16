@@ -6,6 +6,8 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 class HttpClient : public IHttpClient {
   public:
@@ -18,6 +20,9 @@ class HttpClient : public IHttpClient {
 
     // Fetch URL using connection reuse
     std::optional<std::string> fetchUrl(const std::string& url) override;
+
+    // Fetch multiple URLs concurrently using multi interface
+    std::vector<std::optional<std::string>> fetchUrls(const std::vector<std::string>& urls);
 
     // Get singleton instance
     static IHttpClient& getInstance();
@@ -48,6 +53,12 @@ class HttpClient : public IHttpClient {
       private:
         CURL* handle_;
         HttpClient* client_;
+    };
+
+    struct MultiRequest {
+        CURL* handle;
+        std::string buffer;
+        size_t index;
     };
 
     // Pool management

@@ -1,6 +1,8 @@
 #pragma once
 #include "Station.hpp"
 #include <QAbstractListModel>
+#include <cmath>
+#include <memory>
 #include <vector>
 
 struct ClusterPoint {
@@ -23,39 +25,71 @@ struct Bounds {
     double maxLon;
 };
 
+struct QuadrantStruct {
+    double lat;
+    double lon;
+    double midLat;
+    double midLon;
+};
+
+enum Quadrant { NW = 0, NE = 1, SW = 2, SE = 3 };
+
+struct ClusterContext {
+    double zoomLevel;
+    double minDistanceMeters;
+    double metersPerDegreeLat;
+    double metersPerDegreeLon;
+};
+
 class QuadTreeNode {
   public:
     QuadTreeNode(const Bounds& bounds, int maxDepth);
-
     void insert(const ClusterPoint& point);
     std::vector<Cluster> getClusters(double zoomLevel, double minDistance) const;
 
   private:
-    double m_minLat, m_maxLat, m_minLon, m_maxLon;
+    double m_minLat;
+    double m_maxLat;
+    double m_minLon;
+    double m_maxLon;
     int m_depth;
     int m_maxDepth;
+
     std::vector<ClusterPoint> m_points;
-    std::unique_ptr<QuadTreeNode> m_nw, m_ne, m_sw, m_se;
+    std::unique_ptr<QuadTreeNode> m_nw;
+    std::unique_ptr<QuadTreeNode> m_ne;
+    std::unique_ptr<QuadTreeNode> m_sw;
+    std::unique_ptr<QuadTreeNode> m_se;
+    QuadTreeNode* m_children[4] = {nullptr, nullptr, nullptr, nullptr};
 
     bool shouldSubdivide() const;
     void subdivide();
-    Cluster aggregatePoints() const;
-    void collectAllPoints(std::vector<ClusterPoint>& points) const;
+    Cluster aggregatePointsInline() const;
+    Cluster aggregateSubtree() const;
+    void getClustersImpl(const ClusterContext& ctx, std::vector<Cluster>& clusters) const;
+};
+
+struct ClusterItem {
+    double lat;
+    double lon;
+    int count;
+    bool isCluster;
+    int stationIndex;
 };
 
 class ClusterModel : public QAbstractListModel {
     Q_OBJECT
 
   public:
-    enum class ClusterRoles : uint16_t {
+    explicit ClusterModel(QObject* parent = nullptr);
+
+    enum class ClusterRoles {
       LATITUDE_ROLE = Qt::UserRole + 1,
       LONGITUDE_ROLE,
       COUNT_ROLE,
       IS_CLUSTER_ROLE,
       STATION_INDEX_ROLE
     };
-
-    explicit ClusterModel(QObject* parent = nullptr);
 
     void setStations(const std::vector<Station>& stations);
     Q_INVOKABLE void updateClusters(double zoomLevel);
@@ -65,14 +99,6 @@ class ClusterModel : public QAbstractListModel {
     QHash<int, QByteArray> roleNames() const override;
 
   private:
-    struct ClusterItem {
-        double lat;
-        double lon;
-        int count;
-        bool isCluster;
-        int stationIndex; // -1 if cluster, otherwise station index
-    };
-
     std::vector<Station> m_stations;
     std::unique_ptr<QuadTreeNode> m_quadTree;
     std::vector<ClusterItem> m_displayItems;

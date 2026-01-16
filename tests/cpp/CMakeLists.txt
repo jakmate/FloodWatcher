@@ -28,6 +28,7 @@ add_library(flood_monitor_core STATIC
     ${CMAKE_SOURCE_DIR}/src/StationCluster.cpp
     ${CMAKE_SOURCE_DIR}/include/WarningModel.hpp
     ${CMAKE_SOURCE_DIR}/include/StationModel.hpp
+    ${CMAKE_SOURCE_DIR}/include/StationCluster.hpp
 )
 
 target_include_directories(flood_monitor_core PUBLIC 
@@ -51,6 +52,7 @@ add_executable(gtest_unit_tests
     unit/StationTest.cpp
     unit/MeasureTest.cpp
     unit/WarningTest.cpp
+    unit/StationClusterTest.cpp
 )
 
 target_include_directories(gtest_unit_tests PRIVATE
@@ -62,6 +64,7 @@ target_link_libraries(gtest_unit_tests
         GTest::gtest_main
         GTest::gmock
         flood_monitor_core
+        Qt6::Core
 )
 
 gtest_discover_tests(gtest_unit_tests)

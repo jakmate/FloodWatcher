@@ -4,6 +4,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class MockHttpClient : public IHttpClient {
   public:
@@ -13,6 +14,18 @@ class MockHttpClient : public IHttpClient {
         return it->second;
       }
       return std::nullopt;
+    }
+
+    std::vector<std::optional<std::string>>
+    fetchUrls(const std::vector<std::string>& urls) override {
+      std::vector<std::optional<std::string>> results;
+      results.reserve(urls.size());
+
+      for (const auto& url : urls) {
+        results.push_back(fetchUrl(url));
+      }
+
+      return results;
     }
 
     void addResponse(const std::string& url, const std::string& response) {

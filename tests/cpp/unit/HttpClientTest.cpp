@@ -96,3 +96,78 @@ TEST(HttpClientTest, PoolSizeLimit) {
   // Should still succeed even when exceeding pool size
   EXPECT_EQ(successCount, 15);
 }
+
+TEST(HttpClientTest, FetchUrlsValidUrls) {
+  std::vector<std::string> urls = {"https://www.google.com/", "https://www.example.com/"};
+
+  auto results = HttpClient::getInstance().fetchUrls(urls);
+
+  ASSERT_EQ(results.size(), 2);
+  EXPECT_TRUE(results[0].has_value());
+  EXPECT_TRUE(results[1].has_value());
+  EXPECT_FALSE(
+      results[0]->empty()); // NOLINT(bugprone-unchecked-optional-access,-warnings-as-errors)
+  EXPECT_FALSE(
+      results[1]->empty()); // NOLINT(bugprone-unchecked-optional-access,-warnings-as-errors)
+}
+
+TEST(HttpClientTest, FetchUrlsEmptyVector) {
+  std::vector<std::string> urls;
+
+  auto results = HttpClient::getInstance().fetchUrls(urls);
+
+  EXPECT_TRUE(results.empty());
+}
+
+TEST(HttpClientTest, FetchUrlsMixedResults) {
+  std::vector<std::string> urls = {"https://www.google.com/",
+                                   "https://www.google.com/nonexistent404page",
+                                   "https://www.example.com/"};
+
+  auto results = HttpClient::getInstance().fetchUrls(urls);
+
+  ASSERT_EQ(results.size(), 3);
+  EXPECT_TRUE(results[0].has_value());
+  EXPECT_FALSE(results[1].has_value());
+  EXPECT_TRUE(results[2].has_value());
+}
+
+TEST(HttpClientTest, FetchUrlsInvalidUrl) {
+  std::vector<std::string> urls = {"https://www.google.com/", "invalid://url"};
+
+  auto results = HttpClient::getInstance().fetchUrls(urls);
+
+  ASSERT_EQ(results.size(), 2);
+  EXPECT_TRUE(results[0].has_value());
+  EXPECT_FALSE(results[1].has_value());
+}
+
+TEST(HttpClientTest, FetchUrlsPerformance) {
+  std::vector<std::string> urls(10, "https://www.google.com/");
+
+  auto start = std::chrono::steady_clock::now();
+  auto results = HttpClient::getInstance().fetchUrls(urls);
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                      std::chrono::steady_clock::now() - start)
+                      .count();
+
+  EXPECT_EQ(results.size(), 10);
+  for (const auto& result : results) {
+    EXPECT_TRUE(result.has_value());
+  }
+
+  std::cout << "Batch fetch of 10 URLs took: " << duration << "ms\n";
+}
+
+TEST(HttpClientTest, FetchUrlsResultOrderPreserved) {
+  std::vector<std::string> urls = {"https://www.google.com/", "https://www.example.com/",
+                                   "https://www.google.com/nonexistent404page"};
+
+  auto results = HttpClient::getInstance().fetchUrls(urls);
+
+  ASSERT_EQ(results.size(), 3);
+  // Results should match URL order
+  EXPECT_TRUE(results[0].has_value());  // google.com
+  EXPECT_TRUE(results[1].has_value());  // example.com
+  EXPECT_FALSE(results[2].has_value()); // 404
+}
